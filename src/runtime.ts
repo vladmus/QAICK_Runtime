@@ -15,7 +15,26 @@ export interface RuntimeConfiguration extends ExecutorConfiguration {
   executor?: Executor;
 }
 
+export const RUNTIME_VERSION = '0.1.0-alpha.1' as const;
+
+export type RuntimeCapability =
+  | 'execution'
+  | 'controls'
+  | 'events'
+  | 'results'
+  | 'retries'
+  | 'run-from-here'
+  | 'action-executors';
+
+export interface RuntimeInfo {
+  name: '@qaick/runtime';
+  version: typeof RUNTIME_VERSION;
+  capabilities: readonly RuntimeCapability[];
+}
+
 export interface QaickRuntime {
+  /** Optional for compatibility with Executor implementations used as local adapters. */
+  info?(): RuntimeInfo;
   execute(request: ExecutorRequest): Promise<ExecutorRun>;
   cancel(requestId: string): Promise<void>;
   control(requestId: string, command: ControlCommand): Promise<void>;
@@ -34,6 +53,14 @@ export function createRuntime(configuration: RuntimeConfiguration = {}): QaickRu
 
 class ComposedQaickRuntime implements QaickRuntime {
   constructor(private readonly executor: Executor) {}
+
+  info(): RuntimeInfo {
+    return {
+      name: '@qaick/runtime',
+      version: RUNTIME_VERSION,
+      capabilities: ['execution', 'controls', 'events', 'results', 'retries', 'run-from-here', 'action-executors'],
+    };
+  }
 
   execute(request: ExecutorRequest): Promise<ExecutorRun> { return this.executor.execute(request); }
   cancel(requestId: string): Promise<void> { return this.executor.cancel(requestId); }

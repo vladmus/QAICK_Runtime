@@ -3,6 +3,16 @@ import type { ActionExecutor } from '@qaick/executor';
 import { createRuntime } from './runtime.js';
 
 describe('QAick Runtime composition', () => {
+  it('reports the stable host-neutral Runtime capabilities', () => {
+    const runtime = createRuntime();
+
+    expect(runtime.info?.()).toEqual({
+      name: '@qaick/runtime',
+      version: '0.1.0-alpha.1',
+      capabilities: ['execution', 'controls', 'events', 'results', 'retries', 'run-from-here', 'action-executors'],
+    });
+  });
+
   it('composes Executor and routes execution through the public runtime API', async () => {
     const action: ActionExecutor = {
       supports: name => name === 'runtime.echo',
@@ -52,5 +62,28 @@ describe('QAick Runtime composition', () => {
 
     expect(events.at(-1)?.type).toBe('run_finished');
     expect(runtime.controlState('runtime-controls')).toBe('completed');
+  });
+
+  it('returns a stable terminal failure for an unsupported action', async () => {
+    const runtime = createRuntime();
+    const executionPackage = {
+      schemaVersion: 6,
+      packageId: 'runtime-unsupported-action',
+      target: { kind: 'flow' as const, id: 'flow', name: 'Runtime Flow' },
+      definitions: [
+        { id: 'flow', kind: 'flow' as const, name: 'Runtime Flow' },
+        { id: 'missing.action', kind: 'action' as const, name: 'Missing Action' },
+      ],
+      requiredInputs: [],
+      steps: [{ id: 'missing', name: 'Missing', action: 'missing.action', output: {} }],
+    };
+
+    const run = await runtime.execute({ requestId: 'runtime-unsupported-action', executionPackage, inputs: {}, environment: 'test' });
+    const first = await run.result;
+    const second = await runtime.result('runtime-unsupported-action');
+
+    expect(first.state).toBe('failed');
+    expect(first.error?.code).toBe('MISSING_ACTION_ADAPTER');
+    expect(second).toEqual(first);
   });
 });

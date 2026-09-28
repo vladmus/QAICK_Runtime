@@ -1,0 +1,156 @@
+import { createServer, type Server } from 'node:http';
+import { afterEach, describe, expect, it } from 'vitest';
+import { HttpActionExecutor } from '@qaick/http-executor';
+import { NodeHttpTransport } from '@qaick/http-executor/node';
+import { createRuntime } from './runtime.js';
+
+const servers: Server[] = [];
+
+afterEach(async () => {
+  await Promise.all(servers.splice(0).map(server => new Promise<void>(resolve => server.close(() => resolve()))));
+});
+
+describe('QAick Runtime Node HTTP composition', () => {
+  it('routes a localhost request through Runtime, Executor and NodeHttpTransport', async () => {
+    const server = createServer((request, response) => {
+      if (request.url === '/orders') {
+        response.setHeader('content-type', 'application/json');
+        response.setHeader('x-auth-token', 'node-token');
+        response.end(JSON.stringify({ orders: [{ id: 'order-1' }] }));
+        return;
+      }
+      response.statusCode = 404;
+      response.end(JSON.stringify({ message: 'not found' }));
+    });
+    servers.push(server);
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, '127.0.0.1', () => resolve());
+    });
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not expose a port.');
+
+    const runtime = createRuntime({
+      actionExecutors: [new HttpActionExecutor(new NodeHttpTransport())],
+    });
+    const executionPackage = {
+      schemaVersion: 6,
+      packageId: 'runtime-http-composition',
+      target: { kind: 'flow' as const, id: 'flow', name: 'Runtime HTTP Flow' },
+      definitions: [
+        { id: 'flow', kind: 'flow' as const, name: 'Runtime HTTP Flow' },
+        { id: 'http.request', kind: 'action' as const, name: 'HTTP Request' },
+      ],
+      requiredInputs: [],
+      steps: [{
+        id: 'load-orders',
+        name: 'Load orders',
+        action: 'http.request',
+        staticInputs: { url: `http://127.0.0.1:${address.port}/orders`, method: 'GET' },
+        adapterConfig: { responseFields: { firstOrderId: '$.orders[0].id' } },
+        output: { body: 'body', firstOrderId: 'firstOrderId', headers: 'headers' },
+      }],
+    };
+
+    const run = await runtime.execute({
+      requestId: 'runtime-http-composition',
+      executionPackage,
+      inputs: {},
+      environment: 'node',
+    });
+    const result = await run.result;
+
+    expect(result.state).toBe('completed');
+    expect(result.steps[0]?.outputs).toMatchObject({
+      body: { orders: [{ id: 'order-1' }] },
+      firstOrderId: 'order-1',
+      headers: { 'x-auth-token': 'node-token' },
+    });
+  });
+
+  it('preserves POST JSON and HTTP failure semantics through Runtime', async () => {
+    const server = createServer((request, response) => {
+      if (request.url === '/echo') {
+        const chunks: Buffer[] = [];
+        request.on('data', chunk => chunks.push(Buffer.from(chunk)));
+        request.on('end', () => {
+          response.setHeader('content-type', 'application/json');
+          response.end(JSON.stringify({ received: JSON.parse(Buffer.concat(chunks).toString('utf8')) }));
+        });
+        return;
+      }
+      if (request.url === '/error') {
+        response.statusCode = 503;
+        response.setHeader('content-type', 'application/json');
+        response.end(JSON.stringify({ message: 'unavailable' }));
+        return;
+      }
+      if (request.url === '/slow') {
+        setTimeout(() => response.end('late'), 100);
+        return;
+      }
+      response.statusCode = 404;
+      response.end();
+    });
+    servers.push(server);
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, '127.0.0.1', () => resolve());
+    });
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not expose a port.');
+    const runtime = createRuntime({ actionExecutors: [new HttpActionExecutor(new NodeHttpTransport())] });
+    const packageFor = (path: string, staticInputs: Record<string, unknown>, adapterConfig?: Record<string, unknown>) => ({
+      schemaVersion: 6,
+      packageId: `runtime-http-${path.slice(1)}`,
+      target: { kind: 'flow' as const, id: 'flow', name: 'Runtime HTTP Flow' },
+      definitions: [
+        { id: 'flow', kind: 'flow' as const, name: 'Runtime HTTP Flow' },
+        { id: 'http.request', kind: 'action' as const, name: 'HTTP Request' },
+      ],
+      requiredInputs: [],
+      steps: [{ id: 'request', name: 'Request', action: 'http.request', staticInputs, adapterConfig, output: {} }],
+    });
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    const postRun = await runtime.execute({
+      requestId: 'runtime-http-post',
+      executionPackage: packageFor('/echo', { url: `${baseUrl}/echo`, method: 'POST', body: { name: 'QAick' } }),
+      inputs: {},
+      environment: 'node',
+    });
+    const postResult = await postRun.result;
+    expect(postResult.state).toBe('completed');
+    expect(postResult.steps[0]?.outputs).toMatchObject({ body: { received: { name: 'QAick' } } });
+
+    const errorRun = await runtime.execute({
+      requestId: 'runtime-http-error',
+      executionPackage: packageFor('/error', { url: `${baseUrl}/error` }),
+      inputs: {},
+      environment: 'node',
+    });
+    const errorResult = await errorRun.result;
+    expect(errorResult.state).toBe('failed');
+    expect(errorResult.error?.code).toBe('HTTP_STATUS_ERROR');
+
+    const timeoutRun = await runtime.execute({
+      requestId: 'runtime-http-timeout',
+      executionPackage: packageFor('/slow', { url: `${baseUrl}/slow` }, { timeoutMs: 10 }),
+      inputs: {},
+      environment: 'node',
+    });
+    const timeoutResult = await timeoutRun.result;
+    expect(timeoutResult.state).toBe('failed');
+    expect(timeoutResult.error?.code).toBe('HTTP_TIMEOUT');
+
+    const networkRun = await runtime.execute({
+      requestId: 'runtime-http-network',
+      executionPackage: packageFor('/closed', { url: 'http://127.0.0.1:1/closed' }),
+      inputs: {},
+      environment: 'node',
+    });
+    const networkResult = await networkRun.result;
+    expect(networkResult.state).toBe('failed');
+    expect(networkResult.error?.code).toBe('HTTP_NETWORK_ERROR');
+  });
+});
