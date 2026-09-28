@@ -1,6 +1,6 @@
 # QAick Runtime — Alpha 1 Development Plan
 
-Status: planned
+Status: **ACTIVE — RT0 next**
 
 ## Purpose
 
@@ -10,111 +10,78 @@ It is not a second execution engine.
 
 > **Runtime assembles. Executor orchestrates. Act Executors perform.**
 
-QAick Runtime composes:
+Runtime composes `@qaick/executor`, Act Executors such as `@qaick/http-executor`, host-appropriate transports, execution lifecycle/handles, events/results/controls, and a stable API consumed by hosts.
 
-- `@qaick/executor`
-- Act Executors such as `@qaick/http-executor`
-- host-provided transports
-- execution lifecycle and handle management
-- events, results and controls
-- a stable Runtime API consumed by different hosts
+Runtime remains independent of Electron, React, Vite, Express, Fastify and any specific deployment protocol.
 
-The Runtime must remain independent of Electron, React, Vite, Express, Fastify, and any specific deployment protocol.
+## Current cross-repository baseline
+
+As of the start of Runtime Alpha 1 implementation:
+
+- QAICK Executor Alpha 1: **Complete**.
+- QAICK HTTP Executor H8 native Node transport: **Complete**.
+- QAICK HTTP Executor H9 host-neutral transport selection: **Complete**.
+- QAICK HTTP Executor H10 shared Executor integration fixture: **Complete**.
+- QAICK HTTP Executor H11 Desktop Host acceptance: **Blocked until Desktop Host exists**.
+- QAICK HTTP Executor H12 future Server/CLI host readiness: **Complete**.
+- QAICK Runtime repository: plan exists; implementation package does not yet exist.
+
+Important correction: RT3 no longer exists to unblock HTTP Executor H10. H10 has already been proven by the HTTP Executor package integration fixture. RT3 now proves that the actual Runtime composition uses the same architecture.
 
 ## Canonical architecture
 
 ```text
-                    QAick Runtime
-                         │
-              ┌──────────┴──────────┐
-              │                     │
-        QAick Executor        Act Executors
-                                   │
-                           ┌───────┴────────┐
-                           │                │
-                    HTTP Executor       future...
-                           │
-                     HttpTransport
-```
-
-Hosts sit above Runtime:
-
-```text
-                         UI / Process
-                              │
-                     QaickRuntimeClient
-                              │
-             ┌────────────────┼────────────────┐
-             ▼                ▼                ▼
-       Desktop Host      Server Host       CLI/CI Host
-       Electron/IPC      HTTP/WebSocket        Node
-             │                │                │
-             └────────────────┼────────────────┘
-                              ▼
-                        QAick Runtime
+UI / Process
+    ↓
+QaickRuntimeClient
+    ↓
+Desktop / Server / CLI Host
+    ↓
+QAick Runtime
+    ↓
+QAick Executor
+    ↓
+Act Executors
+    ↓
+HTTP Executor
+    ↓
+HttpTransport
 ```
 
 ## Domain boundaries
 
-### QAick Runtime owns
+Runtime owns composition of Executor and Act Executors, registration/configuration, execution-handle lifecycle, routing of execute/cancel/control, event subscription/routing, live result retrieval, capability/info reporting, and the stable host-facing Runtime API.
 
-- composition of Executor and Act Executors;
-- registration/configuration of Act Executors and transports;
-- execution handle lifecycle;
-- routing of execute/cancel/control requests;
-- routing/subscription of execution events;
-- retrieval of live `ExecutionResult`;
-- runtime identity/version/capability reporting;
-- stable host-facing Runtime API.
-
-### QAick Runtime does not own
-
-- Routine/Flow orchestration semantics;
-- bindings, scopes or Control Blocks;
-- HTTP request/response semantics;
-- Electron or desktop UI integration;
-- REST/WebSocket server protocol implementation;
-- Runner breakpoint policy;
-- Studio editor state;
-- durable Run Result persistence in Alpha 1;
-- Analyzer evaluation logic.
-
-## Dependency direction
-
-```text
-@qaick/contract
-      │
-      ▼
-@qaick/executor
-      ▲
-      │
-@qaick/http-executor
-      ▲
-      │
-      └────────── @qaick/runtime
-```
-
-More precisely, Runtime depends on Executor and concrete Act Executor packages it chooses to compose.
+Runtime does not own Routine orchestration semantics, bindings/scopes/Control Blocks, HTTP semantics, Electron UI integration, server protocols, Runner breakpoint policy, Studio editor state, durable historical Run Result persistence in Alpha 1, or Analyzer evaluation logic.
 
 Executor and HTTP Executor must not depend on Runtime.
 
 ## Alpha 1 goal
 
-Produce a reusable `@qaick/runtime` package that can:
+Produce standalone `@qaick/runtime` that can instantiate Executor, register HTTP Executor, use native Node HTTP transport, execute headlessly in Node, expose stable execution/control/event/result APIs, support a Desktop Host through a narrow adapter, and remain reusable by future Server and CLI/CI hosts.
 
-1. instantiate QAick Executor;
-2. register QAick HTTP Executor;
-3. use the native Node HTTP transport;
-4. execute QAick behavior headlessly in Node;
-5. expose a stable runtime API;
-6. support a Desktop Host through a narrow IPC adapter;
-7. remain ready for future Server and CLI/CI hosts.
+## Implementation sequence
 
-## Public API direction
+### RT0 — Establish standalone package and dependency boundary
+Status: **NEXT / Not started**
 
-The initial API should remain small.
+Create the real `@qaick/runtime` TypeScript/Node package in QAICK_Runtime. It must build/typecheck independently, depend on QAick execution packages, and contain no Electron/React/Vite/Express/Fastify dependency.
 
-Conceptually:
+**Exit:** package builds independently and dependency scan confirms host neutrality.
+
+### RT1 — Move temporary Runtime composition out of QAICK_Executor
+Status: Not started
+
+Inspect the temporary `QAICK_Executor/runtime` implementation and migrate reusable Runtime composition into QAICK_Runtime rather than duplicating it. Preserve behavior, prove parity, then remove active Runtime ownership from Executor.
+
+**Exit:** Runtime composes Executor successfully and no duplicate active Runtime implementation remains in Executor.
+
+### RT2 — Runtime API and lifecycle
+Status: Not started
+
+Define the small stable Runtime boundary: execute, cancel, control, events, result and runtime info/capabilities. Reuse Executor semantics rather than redefining them. Runtime-level failures must remain distinct from Act/Executor failures.
+
+Conceptual API:
 
 ```ts
 interface QaickRuntime {
@@ -127,115 +94,25 @@ interface QaickRuntime {
 }
 ```
 
-A UI-facing client contract should mirror the same capabilities without exposing host details:
+**Exit:** fake/in-memory Act execution works through Runtime with ordered events and terminal result.
 
-```ts
-interface QaickRuntimeClient {
-  execute(request: RuntimeExecuteRequest): Promise<ExecutionHandle>;
-  cancel(executionId: string): Promise<void>;
-  control(executionId: string, command: RuntimeControlCommand): Promise<void>;
-  subscribe(executionId: string, listener: RuntimeEventListener): Unsubscribe;
-  getResult(executionId: string): Promise<ExecutionResult>;
-  getRuntimeInfo(): Promise<RuntimeInfo>;
-}
-```
-
-The exact type names can evolve during implementation, but the separation between Runtime and Runtime Client must remain.
-
-## Alpha 1 implementation sequence
-
-### RT0 — Establish package and dependency boundary
-
+### RT3 — Compose HTTP Executor + Node transport through Runtime
 Status: Not started
 
-Create the standalone package:
+Runtime constructs/configures `HttpActionExecutor` with `NodeHttpTransport` and registers it with Executor. Transport construction remains injectable/configurable.
 
-```text
-@qaick/runtime
-```
+This is **Runtime composition verification**. HTTP Executor H10 is already complete independently.
 
-Requirements:
+**Exit:** Runtime performs a real local HTTP request through Executor → HTTP Executor → NodeHttpTransport, including custom response headers, without browser CORS.
 
-- standalone TypeScript/Node package;
-- depends on `@qaick/executor`;
-- depends on or composes `@qaick/http-executor`;
-- no Electron/React/Vite dependency;
-- no Express/Fastify dependency;
-- builds and typechecks independently.
-
-Exit evidence:
-
-- package builds independently;
-- dependency scan confirms no application/host framework imports.
-
-### RT1 — Move Runtime composition out of QAICK_Executor
-
+### RT4 — Headless Node acceptance gate
 Status: Not started
 
-Current temporary Runtime code under `QAICK_Executor/runtime` should be migrated into this repository rather than duplicated.
+This is the critical checkpoint before desktop work.
 
-Requirements:
+Prove from a plain Node test/script, with no browser/Electron/Runner/Studio:
 
-- preserve current behavior while moving;
-- remove Runtime ownership from QAICK_Executor after parity is proven;
-- Executor remains independently consumable.
-
-Exit evidence:
-
-- Runtime package composes Executor successfully;
-- no duplicate active Runtime implementation remains in QAICK_Executor.
-
-### RT2 — Define Runtime types and lifecycle
-
-Status: Not started
-
-Define:
-
-- runtime execution request;
-- execution handle/id;
-- runtime event mapping;
-- control commands;
-- result access;
-- runtime capability/info model;
-- runtime-level failures distinct from Act/Executor failures.
-
-Runtime should not redefine Executor semantics unnecessarily.
-
-Exit evidence:
-
-- fake/in-memory Act Executor can execute through Runtime;
-- ordered events and terminal result are observable through Runtime API.
-
-### RT3 — Compose HTTP Executor with Node transport
-
-Status: Not started
-
-Register `HttpActionExecutor` using `NodeHttpTransport`.
-
-Requirements:
-
-- Runtime owns composition;
-- HTTP Executor owns HTTP semantics;
-- host owns environment/network placement;
-- transport construction is injectable/configurable.
-
-Exit evidence:
-
-- headless Node execution performs a real local HTTP request;
-- custom response headers are available;
-- execution does not depend on browser CORS.
-
-This step completes the practical QAICK_HTTP_Executor H10 integration gate.
-
-### RT4 — Headless acceptance gate
-
-Status: Not started
-
-Before Electron exists, prove Runtime works directly in Node.
-
-Acceptance scenarios:
-
-1. simple Flow/Routine execution;
+1. simple Routine/Flow execution;
 2. nested Operation;
 3. response-to-later-request binding;
 4. HTTP GET;
@@ -250,39 +127,21 @@ Acceptance scenarios:
 13. result retrieval;
 14. retry/control mechanisms required by Runner.
 
-Exit evidence:
+**Exit:** QAick execution platform works headlessly through `@qaick/runtime`.
 
-- Runtime can be used from a plain Node script/test with no browser or Electron.
+> **Do not start Electron before RT0–RT4 are green.**
 
-### RT5 — Define host adapter boundary
-
+### RT5 — Host adapter boundary
 Status: Not started
 
-Keep Runtime communication protocol-neutral.
+Keep Runtime protocol-neutral. Define how a host maps its transport/protocol onto Runtime without putting IPC/REST/WebSocket concepts into Runtime itself.
 
-Define host-side adapter responsibilities without implementing server protocols yet.
-
-Conceptually:
-
-```text
-Host Adapter
-   ↓
-QAick Runtime
-```
-
-The Desktop Host will map IPC calls onto Runtime. A future Server Host will map HTTP/WebSocket calls onto the same Runtime API.
-
-Exit evidence:
-
-- no Runtime public API assumes IPC, REST or WebSocket.
+**Exit:** no Runtime public API assumes a particular host protocol.
 
 ### RT6 — Desktop Host Alpha 1
-
 Status: Not started
 
-Implement the first concrete host using Electron.
-
-Architecture:
+Implement the first concrete host using Electron with context isolation, preload bridge, narrow typed QAick API and no unrestricted renderer Node access.
 
 ```text
 React/Vite UI
@@ -292,50 +151,21 @@ QaickRuntimeClient
 Electron Desktop Host
     ↓
 QAick Runtime
-    ↓
-Executor
-    ↓
-HTTP Executor
-    ↓
-NodeHttpTransport
 ```
 
-Security requirements:
-
-- renderer has no unrestricted Node access;
-- use preload/context isolation;
-- expose a narrow typed QAick bridge;
-- do not expose arbitrary filesystem/process/network APIs;
-- avoid logging secrets across IPC.
-
-Exit evidence:
-
-- renderer invokes Runtime through IPC;
-- execution events/results return through IPC;
-- cancellation/control cross the boundary.
+**Exit:** execute/control/events/results cross IPC correctly.
 
 ### RT7 — Desktop native execution acceptance
-
 Status: Not started
 
-Verify from the Electron-hosted UI:
+Verify localhost, endpoints without browser CORS permission, custom response headers such as `x-auth-token`, 4xx/5xx response semantics, cancellation and event/result streaming.
 
-1. localhost API works;
-2. endpoint without browser CORS permission works;
-3. custom header such as `x-auth-token` is visible to bindings/results;
-4. normal 4xx/5xx remains a response, not a transport failure;
-5. cancellation works;
-6. event/result streaming works.
+**Exit:** Desktop Host proves native execution and closes QAICK_HTTP_Executor H11.
 
-This step provides the missing QAICK_HTTP_Executor H11 acceptance evidence.
-
-### RT8 — Runtime Client package/API stabilization
-
+### RT8 — Runtime Client stabilization
 Status: Not started
 
-Stabilize the UI-facing abstraction so Runner and Studio depend on Runtime Client rather than Electron directly.
-
-Expected implementations:
+Stabilize UI-facing `QaickRuntimeClient` so applications do not import Electron APIs.
 
 ```text
 QaickRuntimeClient
@@ -343,128 +173,54 @@ QaickRuntimeClient
     └── HttpRuntimeClient      ← future Server Host
 ```
 
-Exit evidence:
-
-- React/Vite application code imports the Runtime Client abstraction, not Electron APIs.
+**Exit:** React/Vite applications depend only on Runtime Client abstraction.
 
 ### RT9 — Runner integration
-
 Status: Not started
 
-Migrate QAICK_Runner_FE from direct `@qaick/executor` composition to:
+Migrate QAICK_Runner_FE from direct Executor/HTTP Executor construction to `QaickRuntimeClient → Desktop Host → Runtime`. Preserve breakpoint/pause/resume, Step/Continue, retry Action/Operation, Run From Here, Stop After, pause-aware timing, history/export/redaction and existing parity behavior.
 
-```text
-Runner UI
-   ↓
-QaickRuntimeClient
-   ↓
-Desktop Host
-   ↓
-QAick Runtime
-```
-
-Preserve:
-
-- breakpoint/pause/resume;
-- Step/Continue;
-- retry Action/Operation;
-- Run From Here;
-- Stop After;
-- timing;
-- history/export/redaction.
-
-Exit evidence:
-
-- existing Runner Alpha 4 parity suite remains green through Runtime;
-- direct Runner construction of Executor/HTTP Executor is removed from the application path.
+**Exit:** Runner parity suite remains green and direct application-path Executor composition is removed.
 
 ### RT10 — Studio integration readiness
-
 Status: Not started
 
-Provide the Runtime Client/host APIs required by Studio Alpha 10.
+Expose everything Studio needs to execute saved/live Routines through the same Runtime Client. Studio keeps editing/local UI concerns; Runtime owns live execution composition. No historical result repository is introduced into Studio by this step.
 
-Do not implement Studio UI features in this repository.
+**Exit:** Studio can migrate to the same Runtime Client with no Runner-specific Runtime assumptions.
 
-Exit evidence:
-
-- Studio can later execute through the same Runtime Client used by Runner;
-- no Runner-specific assumptions exist in Runtime.
-
-## Future host readiness
-
-### Server Host
-
-Future:
+## Immediate execution order
 
 ```text
-Browser
-  ↓ HTTPS/WebSocket
-QAick Server Host
-  ↓
-QAick Runtime
+RT0 package scaffold
+ ↓
+RT1 migrate temporary Runtime code
+ ↓
+RT2 Runtime API/lifecycle
+ ↓
+RT3 HTTP composition
+ ↓
+RT4 headless Node acceptance     ← first major gate
+ ↓
+RT5 host boundary
+ ↓
+RT6 Electron Desktop Host
+ ↓
+RT7 native desktop acceptance    ← closes HTTP H11
+ ↓
+RT8 Runtime Client
+ ↓
+RT9 Runner migration
+ ↓
+RT10 Studio readiness
 ```
-
-Server Host concerns such as authentication, authorization, multi-user isolation, secrets and shared persistence are outside Runtime Alpha 1.
-
-### CLI/CI Host
-
-Future:
-
-```text
-qaick CLI / pipeline
-        ↓
-QAick Runtime
-        ↓
-Executor + Act Executors
-```
-
-No Chromium/Electron dependency should be required.
-
-## Versioning and package policy
-
-The Runtime should be independently versioned.
-
-Initial package direction:
-
-```text
-@qaick/runtime
-0.1.0-alpha.1
-```
-
-During local development, sibling `file:` dependencies are acceptable.
-
-Before broader distribution, Runtime should consume versioned/published QAick packages rather than requiring sibling repositories on disk.
 
 ## Non-goals for Alpha 1
 
-Do not add:
-
-- durable Run Result repository;
-- Analyzer evaluation;
-- Server Host authentication;
-- multi-user scheduling;
-- distributed worker pools;
-- dynamic third-party plugin discovery;
-- cloud execution proxy;
-- new Routine/Operation/Act semantics;
-- terminology serialization migration.
+No durable Run Result repository, Analyzer evaluation, Server Host authentication, multi-user scheduling, distributed workers, third-party plugin discovery, cloud execution proxy, new Routine/Operation/Act semantics, or terminology serialization migration.
 
 ## Completion criteria
 
-Runtime Alpha 1 is complete when:
-
-1. `@qaick/runtime` is a standalone package/repository.
-2. Runtime composes `@qaick/executor` without duplicating orchestration.
-3. Runtime composes `@qaick/http-executor` with native Node transport.
-4. Runtime works headlessly in Node.
-5. Runtime exposes stable execution, cancel, control, events and result APIs.
-6. Runtime contains no Electron/React/Vite/server-framework dependency.
-7. Electron Desktop Host exposes Runtime through a narrow IPC boundary.
-8. `QaickRuntimeClient` isolates application UI from host transport.
-9. native desktop execution passes localhost/CORS/custom-header acceptance.
-10. HTTP Executor H10 and H11 integration gates are satisfied.
-11. Runner can migrate to Runtime Client without losing Alpha 4 behavior.
-12. future Server and CLI/CI hosts can reuse Runtime without redesigning Executor or HTTP Executor.
+Runtime Alpha 1 is complete when the standalone package composes Executor and HTTP Executor with Node transport, works headlessly, exposes stable execution/control/event/result APIs, stays host-neutral, is exposed by a secure Desktop Host, has a stable Runtime Client, passes desktop native acceptance including H11, and can be consumed by Runner and then Studio without redesigning lower execution domains.
 
 > **One QAick Runtime. Multiple hosts. Shared execution semantics everywhere.**
