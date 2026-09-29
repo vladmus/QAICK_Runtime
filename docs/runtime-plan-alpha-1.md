@@ -1,140 +1,167 @@
 # QAick Runtime — Alpha 1 Development Plan
 
-Status: **ACTIVE — RT9 Runner desktop migration next**
+Status: **ACTIVE — RT9 Runner dual-composition integration next**
 
 ## Purpose
 
 QAick Runtime is the reusable, host-neutral composition layer for QAick execution domains.
 
-> **Runtime assembles. Executor orchestrates. Act Executors perform.**
+> **Runtime assembles. Executor orchestrates. Act Executors perform. Hosts compose.**
 
-Runtime remains independent of Electron, React, Vite, Express, Fastify and any specific host protocol.
+Runtime remains independent of Electron, React, Vite and specific host protocols.
 
-## Current cross-repository status
+## Product architecture clarification
 
-- QAick Executor Alpha 1: **Complete**.
-- QAick HTTP Executor Alpha 1: **Complete**, including H11 Desktop Host acceptance.
-- Runtime RT0–RT7: **Complete**.
-- Runtime RT8 IPC Runtime Client: **Functionally proven through Studio; canonical type-boundary cleanup is planned in Studio**.
-- Runtime RT9 Runner desktop migration: **NEXT; canonical implementation plan is `QAICK_Runner_FE/docs/runner-plan-alpha-5.md`**.
-- Runtime RT10 Studio readiness: **Complete; Studio Alpha 10 is complete**.
+Runner has **two supported compositions**:
 
-## Proven architecture
+1. Runner integrated as a module inside the full QAick Desktop application alongside Studio.
+2. Runner as a separately runnable/distributable standalone application.
+
+The requirement is **one Runner implementation, two compositions**, not two Runner codebases.
 
 ```text
-UI / Process
-    ↓
-QaickRuntimeClient
-    ↓
-Desktop / future Server / CLI Host
-    ↓
-QAick Runtime
-    ↓
-QAick Executor
-    ↓
-Act Executors
-    ↓
-HTTP Executor
-    ↓
-HttpTransport
+                       Shared Runner implementation
+                                  │
+                    ┌─────────────┴─────────────┐
+                    ▼                           ▼
+              QAick Desktop              Standalone Runner
+          Studio + Runner module             Runner
+                    │                           │
+             Runtime Client               Runtime Client
+                    │                           │
+          shared Desktop Host          standalone composition
+                    │                           │
+                    └─────────────┬─────────────┘
+                                  ▼
+                            QAick Runtime
+                                  ↓
+                            QAick Executor
+                                  ↓
+                            Act Executors
 ```
 
-Studio Alpha 10 proves the first concrete desktop path with Electron main owning Runtime and native Node HTTP execution. Native acceptance covers localhost, custom response headers, HTTP/network failure distinction, cancellation, ordered events/results and multi-step response binding.
+QAick Desktop itself has one Desktop Host shared by its modules. Standalone Runner may have its own host/composition because it is independently deployable, but Runner module logic must remain shared and depend on the same Runtime Client contract.
 
-## Milestone status
+## Current status
+
+- Executor Alpha 1: **Complete**.
+- HTTP Executor Alpha 1: **Complete**.
+- RT0–RT7: **Complete**.
+- RT8 Runtime Client: **Functionally proven through Studio; canonical type-boundary cleanup pending**.
+- RT9 Runner integration: **NEXT**, requiring both integrated and standalone Runner acceptance.
+- RT10 Studio readiness: **Complete**.
+
+## Milestones
 
 ### RT0 — Standalone package
-**Complete.** `@qaick/runtime` is a standalone host-neutral TypeScript/Node package.
+**Complete.**
 
 ### RT1 — Runtime composition extraction
-**Complete.** Runtime composition is owned by Runtime rather than Executor.
+**Complete.**
 
 ### RT2 — Runtime API/lifecycle
-**Complete for current Executor boundary.** Execution, cancellation, control, events, results and capability behavior are available through Runtime.
+**Complete for current Executor boundary.**
 
 ### RT3 — HTTP Executor + Node transport composition
-**Complete.** Runtime composition proves Executor → HTTP Executor → NodeHttpTransport.
+**Complete.**
 
 ### RT4 — Headless Node acceptance
-**Complete.** Plain Node acceptance proves nested execution, bindings, events, retry/control, cancellation and native HTTP behavior without browser/Electron/Studio/Runner.
+**Complete.**
 
 ### RT5 — Host adapter boundary
-**Complete.** Runtime APIs do not assume IPC, REST, WebSocket or CLI protocol details.
+**Complete.** Runtime does not assume IPC/REST/WebSocket/CLI.
 
-### RT6 — Desktop Host Alpha 1
-**Complete through QAICK Studio Alpha 10.** Studio is the first concrete Desktop Host.
+### RT6 — First Desktop Host
+**Complete through Studio Alpha 10.** Studio supplied the first physical implementation of the QAick Desktop Host.
 
-### RT7 — Desktop native execution acceptance
-**Complete through QAICK Studio Alpha 10.** This also closes HTTP Executor H11.
+### RT7 — Desktop native acceptance
+**Complete through Studio Alpha 10.** HTTP Executor H11 is closed.
 
 ### RT8 — Runtime Client stabilization
-**Functionally proven; canonical type-boundary cleanup pending.** Studio's `IpcRuntimeClient` proves the client seam. The cleanup is now explicitly planned in `QAICK_Studio_FE/docs/runtime-type-boundary-cleanup-plan.md`.
+**Functionally proven; type-boundary cleanup pending.** Studio proves `IpcRuntimeClient`. Canonical Runtime contracts remain Runtime-owned; the Studio shim cleanup is separately planned.
 
-The rule is that Runtime contracts have one owner. Studio may use renderer-safe type-only imports or an appropriate shared type-only export, but must not retain independent semantic copies.
+### RT9 — Runner dual-composition integration
+**NEXT.** Canonical implementation plan: `QAICK_Runner_FE/docs/runner-plan-alpha-5.md`.
 
-### RT9 — Runner integration
-**NEXT.** The canonical implementation plan is `QAICK_Runner_FE/docs/runner-plan-alpha-5.md`.
+RT9 requires:
 
-Runner Alpha 5 will:
+```text
+Integrated:
+Runner module → QaickRuntimeClient → QAick Desktop Host → Runtime
 
-1. freeze the current Runner baseline;
-2. add the Electron shell;
-3. host QAick Runtime in Electron main;
-4. use the IPC `QaickRuntimeClient` boundary;
-5. migrate the normal execution path;
-6. preserve breakpoints, pause/resume, Step/Continue, retry Act/Operation, Run From Here, Stop After, cancellation and pause-aware timing;
-7. pass native execution and full Runner parity gates;
-8. package a self-contained desktop Runner;
-9. compare Studio and Runner host implementations;
-10. decide from evidence whether `@qaick/desktop-host` extraction is justified.
+Standalone:
+Runner module → QaickRuntimeClient → standalone host/composition → Runtime
+```
 
-**Exit:** Runner parity remains green through the Desktop Runtime Client path and direct application-path Executor composition is removed.
+Both paths must preserve the same Runner UI/control implementation and Runtime semantics.
+
+Runner's richer control needs may extend the canonical Runtime Client/IPC surface, but neither composition may retain a private legacy execution engine.
+
+**RT9 exit:**
+
+- Runner works inside QAick Desktop;
+- standalone Runner remains independently runnable/distributable;
+- both use one shared Runner implementation;
+- both use the canonical Runtime Client contract;
+- advanced controls retain parity in both modes;
+- native execution acceptance passes in both modes;
+- direct legacy Runner application-path Executor composition is removed.
 
 ### RT10 — Studio integration readiness
-**Complete.** Studio Alpha 10 implements and packages the first complete desktop Runtime consumer with Live Run and result-pane integration.
+**Complete.** Studio Alpha 10 is already a full desktop Runtime consumer.
 
 ## Immediate next sequence
 
 ```text
-Studio type-boundary cleanup
+1. Studio Runtime type-boundary cleanup
         ↓
-Runner Alpha 5 R5.0 baseline
+2. Runner baseline + composition inventory
         ↓
-R5.1 Electron shell
+3. Separate reusable Runner module from standalone bootstrap
         ↓
-R5.2 Runtime in Electron main
+4. Make Runner depend on canonical QaickRuntimeClient
         ↓
-R5.3 IPC Runtime Client
+5. Mount Runner module inside QAick Desktop
         ↓
-R5.4 core execution migration
+6. Migrate standalone Runner to same Runtime Client semantics
         ↓
-R5.5 advanced control parity
+7. Extend Runtime/client controls for Runner
         ↓
-R5.6 native execution acceptance
+8. Integrated Runner native/control acceptance
         ↓
-R5.7 full Runner parity
+9. Standalone Runner native/control acceptance
         ↓
-R5.8 desktop packaging
+10. Shared Runner parity gate
         ↓
-R5.9 compare Studio/Runner hosts
+11. Package QAick Desktop AND standalone Runner
         ↓
-R5.10 extraction decision
+12. Normalize genuinely shared host infrastructure
         ↓
-Close RT9 / Runtime Alpha 1 gate
+13. Close RT9 / Runtime Alpha 1 release gate
 ```
+
+## Host ownership
+
+QAick Desktop has one host shared by Studio, Runner and future integrated modules. Electron code currently lives with Studio because Studio implemented it first; physical ownership can later move to a neutral QAICK_Desktop location.
+
+Standalone Runner is a separate deployment composition and may require its own bootstrap/host. Shared host infrastructure may be extracted once both compositions reveal what is genuinely common.
+
+Future Analyzer and Mock Server modules can join QAick Desktop without eliminating their ability to have separate service/process deployments where their product requirements justify it.
 
 ## Release gate
 
 Before broader Runtime package publication/distribution:
 
-- canonical Runtime types are consumable without copied consumer contracts;
-- package tarball/build contains intended declarations/files;
-- a clean host consumer resolves the package without sibling-repo assumptions;
-- Studio and Runner desktop paths consume the same Runtime semantics;
-- Executor peer dependency range aligns with the published Executor release.
+- canonical Runtime types are consumed without duplicated semantic contracts;
+- package declarations/files are correct;
+- clean consumers resolve Runtime without sibling-repo assumptions;
+- integrated Studio/Runner use the same QAick Desktop Runtime semantics;
+- standalone Runner uses the same Runtime Client semantics;
+- Runner advanced controls pass in both compositions;
+- Executor dependency versions align with published releases.
 
-## Non-goals for Alpha 1
+## Non-goals
 
-No durable Run Result repository, Analyzer evaluation, Server Host authentication, multi-user scheduling, distributed workers, cloud execution proxy, new Routine/Operation/Act semantics, or terminology serialization migration.
+No second Runner implementation, no removal of standalone Runner, no requirement for standalone Runner to include Studio, no durable Run Result repository redesign, no Analyzer evaluation redesign, no Server Host implementation, and no new Routine/Operation/Act semantics.
 
-> **Runtime Alpha 1 has proven headless and Studio desktop execution. Runner Alpha 5 is the final major consumer gate.**
+> **One Runner implementation. Two compositions. One Runtime model.**
