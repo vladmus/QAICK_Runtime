@@ -12,6 +12,6 @@ const run = await runtime.execute(request);
 const result = await run.result;
 ```
 
-The package requires Node 20 or newer and `@qaick/executor` as a peer dependency.
+The package requires Node 20 or newer and includes `@qaick/executor` as its execution dependency. Hosts may inject a compatible Executor implementation through `createRuntime({ executor })`.
 
 For local development, run `npm run typecheck`, `npm test`, and `npm run build`. Use `npm pack --dry-run` to inspect the publication contents.
