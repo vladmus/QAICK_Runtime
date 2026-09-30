@@ -11,7 +11,7 @@ afterEach(async () => {
 });
 
 describe('QAick Runtime Node HTTP composition', () => {
-  it('propagates HTTP session cookies across Actions and isolates executions', async () => {
+  it('requires an explicit response cookie binding', async () => {
     const observedCookies: Array<string | undefined> = [];
     const transport = {
       request: async (url: string, init: { headers?: Record<string, string> }) => {
@@ -31,8 +31,8 @@ describe('QAick Runtime Node HTTP composition', () => {
         { id: 'http.payment', kind: 'action' as const, name: 'Payment' },
       ],
       steps: [
-        { id: 'auth', name: 'Auth', action: 'http.auth', output: {}, staticInputs: { url: 'https://example.test/auth', method: 'POST' } },
-        { id: 'payment', name: 'Payment', action: 'http.payment', output: {}, dependsOn: ['auth'], staticInputs: { url: 'https://example.test/payment', method: 'POST' } },
+        { id: 'auth', name: 'Auth', action: 'http.auth', output: { cookies: null }, staticInputs: { url: 'https://example.test/auth', method: 'POST' } },
+        { id: 'payment', name: 'Payment', action: 'http.payment', output: {}, dependsOn: ['auth'], bindings: { cookies: '$steps.auth.cookies' }, staticInputs: { url: 'https://example.test/payment', method: 'POST', cookies: '{{inputs.cookies}}' } },
       ],
       requiredInputs: [],
     };
@@ -45,7 +45,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       requestId: 'runtime-cookie-b', executionPackage: { ...executionPackage, steps: [paymentOnlyStep] }, inputs: {}, environment: 'test',
     });
     expect((await secondRun.result).state).toBe('failed');
-    expect(observedCookies).toEqual([undefined, 'session=runtime-session', undefined]);
+    expect(observedCookies).toEqual([undefined, 'session=runtime-session']);
   });
 
   it('routes a localhost request through Runtime, Executor and NodeHttpTransport', async () => {

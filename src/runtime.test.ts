@@ -38,7 +38,7 @@ describe('QAick Runtime composition', () => {
     expect(result.steps[0]?.outputs).toEqual({ echoed: 'hello' });
   });
 
-  it('adds an internal execution key to runtime values for scoped Action sessions', async () => {
+  it('preserves caller runtime values without adding hidden session state', async () => {
     let runtimeValues: Record<string, unknown> | undefined;
     const runtime = createRuntime({ actionExecutors: [{
       supports: name => name === 'runtime.execution-key',
@@ -54,7 +54,7 @@ describe('QAick Runtime composition', () => {
       inputs: {}, environment: 'test', runtimeValues: { environment: 'test' },
     });
     await run.result;
-    expect(runtimeValues).toMatchObject({ environment: 'test', __qaick_execution_id: 'runtime-execution-key' });
+    expect(runtimeValues).toEqual({ environment: 'test' });
   });
 
   it('routes controls and events without exposing a host transport', async () => {
