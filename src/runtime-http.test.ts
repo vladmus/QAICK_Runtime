@@ -11,6 +11,43 @@ afterEach(async () => {
 });
 
 describe('QAick Runtime Node HTTP composition', () => {
+  it('propagates HTTP session cookies across Actions and isolates executions', async () => {
+    const observedCookies: Array<string | undefined> = [];
+    const transport = {
+      request: async (url: string, init: { headers?: Record<string, string> }) => {
+        observedCookies.push(init.headers?.Cookie ?? init.headers?.cookie);
+        if (url.endsWith('/auth')) return { status: 200, body: { authenticated: true }, headers: { 'set-cookie': 'session=runtime-session; Path=/' } };
+        if (init.headers?.Cookie?.includes('session=runtime-session') || init.headers?.cookie?.includes('session=runtime-session')) return { status: 200, body: { created: true }, headers: {} };
+        return { status: 403, body: { error: 'missing session' }, headers: {} };
+      },
+    };
+    const runtime = createRuntime({ actionExecutors: [new HttpActionExecutor(transport)] });
+    const executionPackage = {
+      schemaVersion: 6,
+      packageId: 'runtime-cookie-session',
+      target: { kind: 'flow' as const, id: 'flow', name: 'Cookie Session' },
+      definitions: [
+        { id: 'http.auth', kind: 'action' as const, name: 'Auth' },
+        { id: 'http.payment', kind: 'action' as const, name: 'Payment' },
+      ],
+      steps: [
+        { id: 'auth', name: 'Auth', action: 'http.auth', output: {}, staticInputs: { url: 'https://example.test/auth', method: 'POST' } },
+        { id: 'payment', name: 'Payment', action: 'http.payment', output: {}, dependsOn: ['auth'], staticInputs: { url: 'https://example.test/payment', method: 'POST' } },
+      ],
+      requiredInputs: [],
+    };
+
+    const firstRun = await runtime.execute({ requestId: 'runtime-cookie-a', executionPackage, inputs: {}, environment: 'test' });
+    expect((await firstRun.result).state).toBe('completed');
+
+    const { dependsOn: _dependsOn, ...paymentOnlyStep } = executionPackage.steps[1];
+    const secondRun = await runtime.execute({
+      requestId: 'runtime-cookie-b', executionPackage: { ...executionPackage, steps: [paymentOnlyStep] }, inputs: {}, environment: 'test',
+    });
+    expect((await secondRun.result).state).toBe('failed');
+    expect(observedCookies).toEqual([undefined, 'session=runtime-session', undefined]);
+  });
+
   it('routes a localhost request through Runtime, Executor and NodeHttpTransport', async () => {
     const server = createServer((request, response) => {
       if (request.url === '/orders') {

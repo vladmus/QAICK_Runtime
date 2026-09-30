@@ -16,6 +16,7 @@ export interface RuntimeConfiguration extends ExecutorConfiguration {
 }
 
 export const RUNTIME_VERSION = '0.1.0-alpha.2' as const;
+const EXECUTION_ID_RUNTIME_VALUE = '__qaick_execution_id';
 
 export type RuntimeCapability =
   | 'execution'
@@ -62,7 +63,12 @@ class ComposedQaickRuntime implements QaickRuntime {
     };
   }
 
-  execute(request: ExecutorRequest): Promise<ExecutorRun> { return this.executor.execute(request); }
+  execute(request: ExecutorRequest): Promise<ExecutorRun> {
+    return this.executor.execute({
+      ...request,
+      runtimeValues: { ...(request.runtimeValues ?? {}), [EXECUTION_ID_RUNTIME_VALUE]: request.requestId },
+    });
+  }
   cancel(requestId: string): Promise<void> { return this.executor.cancel(requestId); }
   control(requestId: string, command: ControlCommand): Promise<void> { return this.executor.control(requestId, command); }
   controlState(requestId: string): ExecutionControlState | undefined { return this.executor.controlState(requestId); }

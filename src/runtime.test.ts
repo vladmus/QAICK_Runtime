@@ -38,6 +38,25 @@ describe('QAick Runtime composition', () => {
     expect(result.steps[0]?.outputs).toEqual({ echoed: 'hello' });
   });
 
+  it('adds an internal execution key to runtime values for scoped Action sessions', async () => {
+    let runtimeValues: Record<string, unknown> | undefined;
+    const runtime = createRuntime({ actionExecutors: [{
+      supports: name => name === 'runtime.execution-key',
+      execute: context => { runtimeValues = context.runtimeValues; return { outputs: { ok: true } }; },
+    }] });
+    const run = await runtime.execute({
+      requestId: 'runtime-execution-key',
+      executionPackage: {
+        schemaVersion: 6, packageId: 'runtime-execution-key', target: { kind: 'flow', id: 'flow', name: 'Execution Key' },
+        definitions: [{ id: 'runtime.execution-key', kind: 'action', name: 'Execution Key' }],
+        steps: [{ id: 'key', name: 'Execution Key', action: 'runtime.execution-key', output: {} }], requiredInputs: [],
+      },
+      inputs: {}, environment: 'test', runtimeValues: { environment: 'test' },
+    });
+    await run.result;
+    expect(runtimeValues).toMatchObject({ environment: 'test', __qaick_execution_id: 'runtime-execution-key' });
+  });
+
   it('routes controls and events without exposing a host transport', async () => {
     const action: ActionExecutor = {
       supports: name => name === 'runtime.controlled',
