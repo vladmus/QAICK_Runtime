@@ -1,6 +1,6 @@
 {
   "name": "@qaick/runtime",
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-alpha.6",
   "description": "Host-neutral composition layer for QAick execution.",
   "type": "module",
   "files": [
@@ -36,7 +36,7 @@
     "@qaick/executor": "^0.1.0-alpha.2"
   },
   "devDependencies": {
-    "@qaick/http-executor": "0.1.0-alpha.6",
+    "@qaick/http-executor": "0.1.0-alpha.8",
     "typescript": "~6.0.2",
     "vitest": "^5.0.0"
   }
