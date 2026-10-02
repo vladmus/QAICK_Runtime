@@ -15,7 +15,7 @@ export interface RuntimeConfiguration extends ExecutorConfiguration {
   executor?: Executor;
 }
 
-export const RUNTIME_VERSION = '0.1.0-alpha.2' as const;
+export const RUNTIME_VERSION = '0.1.0-alpha.7' as const;
 
 export type RuntimeCapability =
   | 'execution'

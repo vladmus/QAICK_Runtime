@@ -8,7 +8,7 @@ describe('QAick Runtime composition', () => {
 
     expect(runtime.info?.()).toEqual({
       name: '@qaick/runtime',
-      version: '0.1.0-alpha.2',
+      version: '0.1.0-alpha.7',
       capabilities: ['execution', 'controls', 'events', 'results', 'retries', 'run-from-here', 'action-executors'],
     });
   });

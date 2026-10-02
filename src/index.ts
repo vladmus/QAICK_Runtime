@@ -11,3 +11,5 @@ export type {
   ExecutorResult,
   ExecutorRun,
 } from '@qaick/executor';
+
+export { resolveDeclaredInputs } from '@qaick/executor';
