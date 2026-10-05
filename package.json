@@ -1,6 +1,6 @@
 {
   "name": "@qaick/runtime",
-  "version": "0.1.0-alpha.7",
+  "version": "0.1.0",
   "description": "Host-neutral composition layer for QAick execution.",
   "type": "module",
   "files": [
@@ -12,7 +12,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "alpha"
+    "tag": "latest"
   },
   "repository": {
     "type": "git",
@@ -33,10 +33,10 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
-    "@qaick/executor": "0.1.0-alpha.3"
+    "@qaick/executor": "0.1.0"
   },
   "devDependencies": {
-    "@qaick/http-executor": "0.1.0-alpha.8",
+    "@qaick/http-executor": "0.1.0",
     "typescript": "~6.0.2",
     "vitest": "^5.0.0"
   }
