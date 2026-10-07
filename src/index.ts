@@ -10,6 +10,10 @@ export type {
   ExecutorRequest,
   ExecutorResult,
   ExecutorRun,
+  ActReplayTarget,
+  ActReplayHandle,
+  OperationReplayHandle,
+  ExecutorStepResult,
 } from '@qaick/executor';
 
 export { resolveDeclaredInputs } from '@qaick/executor';

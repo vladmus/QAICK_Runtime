@@ -1,0 +1,9 @@
+
+ RUN  v5.0.2 /home/logr/IdeaProjects/QAICK/QAICK_Runtime
+
+
+ Test Files  3 passed (3)
+      Tests  12 passed (12)
+   Start at  17:49:15
+   Duration  440ms (transform 63%, import 21%, tests 14%, worker 2%)
+

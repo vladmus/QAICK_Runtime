@@ -3,7 +3,7 @@ import type { ActionExecutor } from '@qaick/executor';
 import { createRuntime } from './runtime.js';
 
 const flow = {
-  schemaVersion: 6,
+  schemaVersion: 7 as const, ordering: 'routine' as const, executionContext: {scope:'flow' as const,mode:'standalone' as const},
   packageId: 'runtime-headless',
   target: { kind: 'flow' as const, id: 'flow', name: 'Headless Flow' },
   definitions: [
@@ -13,8 +13,8 @@ const flow = {
   ],
   requiredInputs: ['customerId'],
   steps: [
-    { id: 'first', name: 'First', action: 'headless.first', bindings: { customerId: '$inputs.customerId' }, output: { paymentId: 'PAY-1' } },
-    { id: 'second', name: 'Second', action: 'headless.second', bindings: { paymentId: '$steps.first.paymentId' }, output: { status: 'APPROVED' } },
+    { structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'first', name: 'First', action: 'headless.first', bindings: { customerId: {type:'input' as const,path:['customerId']} }, output: { paymentId: 'PAY-1' } },
+    { structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:2}]}, id: 'second', name: 'Second', action: 'headless.second', bindings: { paymentId: {type:'hierarchy-output' as const,address:{scope:'flow' as const,segments:[{kind:'step' as const,position:1}]},iterations:[],outputName:'paymentId'} }, output: { status: 'APPROVED' } },
   ],
 };
 
@@ -52,12 +52,12 @@ describe('QAick Runtime headless acceptance', () => {
       requiredInputs: ['customerId'],
       definitions: [...flow.definitions.slice(0, 1), { id: 'headless.nested', kind: 'action' as const, name: 'Nested Action' }],
       steps: [{
-        id: 'operation',
+        structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'operation',
         name: 'Nested Operation',
         kind: 'operation' as const,
         action: 'operation',
         output: {},
-        children: [{ id: 'nested', name: 'Nested Action', action: 'headless.nested', bindings: { customerId: '$inputs.customerId' }, output: { seen: 'C-1' } }],
+        children: [{ structuralAddress:{scope:'flow' as const,segments:[{kind:'step' as const,position:1},{kind:'body' as const},{kind:'step' as const,position:1}]},id: 'nested', name: 'Nested Action', action: 'headless.nested', bindings: { customerId: {type:'input' as const,path:['customerId']} }, output: { seen: 'C-1' } }],
       }],
     };
 
@@ -87,16 +87,18 @@ describe('QAick Runtime headless acceptance', () => {
       packageId: 'runtime-retry',
       requiredInputs: [],
       definitions: [...flow.definitions.slice(0, 1), { id: 'headless.retry', kind: 'action' as const, name: 'Retry' }],
-      steps: [{ ...flow.steps[0], action: 'headless.retry', bindings: undefined }],
+      steps: [{ ...flow.steps[0], action: 'headless.retry', bindings: {} }],
     };
 
     const run = await runtime.execute({ requestId: 'runtime-retry', executionPackage, inputs: {}, environment: 'node' });
     expect((await run.result).state).toBe('failed');
-    await runtime.retryAction('runtime-retry', 'first');
-    expect((await runtime.result('runtime-retry')).state).toBe('completed');
+    const target = {structuralAddress:executionPackage.steps[0].structuralAddress,iterations:[]};
+    const replay = await runtime.retryAction('runtime-retry', target);
+    expect((await replay.result).state).toBe('completed');
+    expect((await runtime.result('runtime-retry')).state).toBe('failed');
 
-    const fromHere = await runtime.runFromHere('runtime-retry', 'first');
-    expect(fromHere?.requestId).toMatch(/^runtime-retry:from:first:/);
+    const fromHere = await runtime.runFromHere('runtime-retry', target);
+    expect(fromHere.requestId).not.toBe('runtime-retry');
     expect((await fromHere!.result).state).toBe('completed');
   });
 
@@ -114,7 +116,7 @@ describe('QAick Runtime headless acceptance', () => {
       packageId: 'runtime-cancel',
       requiredInputs: [],
       definitions: [...flow.definitions.slice(0, 1), { id: 'headless.wait', kind: 'action' as const, name: 'Wait' }],
-      steps: [{ ...flow.steps[0], action: 'headless.wait', bindings: undefined }],
+      steps: [{ ...flow.steps[0], action: 'headless.wait', bindings: {} }],
     };
 
     const run = await runtime.execute({ requestId: 'runtime-cancel', executionPackage, inputs: {}, environment: 'node' });

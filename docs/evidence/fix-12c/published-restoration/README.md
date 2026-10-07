@@ -1,0 +1,1 @@
+Runtime 0.2.0 accepted by npm. Standard installed registry Executor 0.2.0 and HTTP Executor 0.2.0: 12 tests, strict typecheck and build pass. Removed sibling build/test aliases. Runtime version derives from package.json. Interactive application integration remains gated.

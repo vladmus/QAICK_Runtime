@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ActionExecutor } from '@qaick/executor';
 import { createRuntime } from './runtime.js';
+import packageJson from '../package.json' with { type: 'json' };
 
 describe('QAick Runtime composition', () => {
   it('reports the stable host-neutral Runtime capabilities', () => {
@@ -8,7 +9,7 @@ describe('QAick Runtime composition', () => {
 
     expect(runtime.info?.()).toEqual({
       name: '@qaick/runtime',
-      version: '0.1.0-alpha.7',
+      version: packageJson.version,
       capabilities: ['execution', 'controls', 'events', 'results', 'retries', 'run-from-here', 'action-executors'],
     });
   });
@@ -20,7 +21,7 @@ describe('QAick Runtime composition', () => {
     };
     const runtime = createRuntime({ actionExecutors: [action] });
     const executionPackage = {
-      schemaVersion: 6,
+      schemaVersion: 7 as const, ordering: 'routine' as const, executionContext: {scope:'flow' as const,mode:'standalone' as const},
       packageId: 'runtime-composition',
       target: { kind: 'flow' as const, id: 'flow', name: 'Runtime Flow' },
       definitions: [
@@ -28,7 +29,7 @@ describe('QAick Runtime composition', () => {
         { id: 'runtime.echo', kind: 'action' as const, name: 'Echo' },
       ],
       requiredInputs: [],
-      steps: [{ id: 'echo', name: 'Echo', action: 'runtime.echo', staticInputs: { value: 'hello' }, output: { echoed: 'value' } }],
+      steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'echo', name: 'Echo', action: 'runtime.echo', staticInputs: { value: 'hello' }, output: { echoed: 'value' } }],
     };
 
     const run = await runtime.execute({ requestId: 'runtime-composition', executionPackage, inputs: {}, environment: 'test' });
@@ -47,9 +48,9 @@ describe('QAick Runtime composition', () => {
     const run = await runtime.execute({
       requestId: 'runtime-execution-key',
       executionPackage: {
-        schemaVersion: 6, packageId: 'runtime-execution-key', target: { kind: 'flow', id: 'flow', name: 'Execution Key' },
+        schemaVersion: 7 as const, ordering: 'routine' as const, executionContext: {scope:'flow' as const,mode:'standalone' as const}, packageId: 'runtime-execution-key', target: { kind: 'flow', id: 'flow', name: 'Execution Key' },
         definitions: [{ id: 'runtime.execution-key', kind: 'action', name: 'Execution Key' }],
-        steps: [{ id: 'key', name: 'Execution Key', action: 'runtime.execution-key', output: {} }], requiredInputs: [],
+        steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'key', name: 'Execution Key', action: 'runtime.execution-key', output: {} }], requiredInputs: [],
       },
       inputs: {}, environment: 'test', runtimeValues: { environment: 'test' },
     });
@@ -64,7 +65,7 @@ describe('QAick Runtime composition', () => {
     };
     const runtime = createRuntime({ actionExecutors: [action] });
     const executionPackage = {
-      schemaVersion: 6,
+      schemaVersion: 7 as const, ordering: 'routine' as const, executionContext: {scope:'flow' as const,mode:'standalone' as const},
       packageId: 'runtime-controls',
       target: { kind: 'flow' as const, id: 'flow', name: 'Runtime Flow' },
       definitions: [
@@ -72,7 +73,7 @@ describe('QAick Runtime composition', () => {
         { id: 'runtime.controlled', kind: 'action' as const, name: 'Controlled' },
       ],
       requiredInputs: [],
-      steps: [{ id: 'controlled', name: 'Controlled', action: 'runtime.controlled', output: { ok: true } }],
+      steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'controlled', name: 'Controlled', action: 'runtime.controlled', output: { ok: true } }],
     };
     const run = await runtime.execute({ requestId: 'runtime-controls', executionPackage, inputs: {}, environment: 'test' });
     const events = [];
@@ -86,7 +87,7 @@ describe('QAick Runtime composition', () => {
   it('returns a stable terminal failure for an unsupported action', async () => {
     const runtime = createRuntime();
     const executionPackage = {
-      schemaVersion: 6,
+      schemaVersion: 7 as const, ordering: 'routine' as const, executionContext: {scope:'flow' as const,mode:'standalone' as const},
       packageId: 'runtime-unsupported-action',
       target: { kind: 'flow' as const, id: 'flow', name: 'Runtime Flow' },
       definitions: [
@@ -94,7 +95,7 @@ describe('QAick Runtime composition', () => {
         { id: 'missing.action', kind: 'action' as const, name: 'Missing Action' },
       ],
       requiredInputs: [],
-      steps: [{ id: 'missing', name: 'Missing', action: 'missing.action', output: {} }],
+      steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'missing', name: 'Missing', action: 'missing.action', output: {} }],
     };
 
     const run = await runtime.execute({ requestId: 'runtime-unsupported-action', executionPackage, inputs: {}, environment: 'test' });
@@ -102,7 +103,7 @@ describe('QAick Runtime composition', () => {
     const second = await runtime.result('runtime-unsupported-action');
 
     expect(first.state).toBe('failed');
-    expect(first.error?.code).toBe('MISSING_ACTION_ADAPTER');
+    expect(first.error?.code).toBe('UNSUPPORTED_ACTION');
     expect(second).toEqual(first);
   });
 });

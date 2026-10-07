@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": false,
+    "baseUrl": "/home/logr/IdeaProjects/QAICK/QAICK_Runtime",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@qaick/contract": [
+        "/home/logr/IdeaProjects/QAICK/QAICK_Contract/src/index.ts"
+      ],
+      "@qaick/executor": [
+        "/home/logr/IdeaProjects/QAICK/QAICK_Executor/src/index.ts"
+      ],
+      "@qaick/http-executor": [
+        "/home/logr/IdeaProjects/QAICK/QAICK_HTTP_Executor/src/index.ts"
+      ]
+    },
+    "declaration": true,
+    "rootDir": "/home/logr/IdeaProjects/QAICK",
+    "outDir": "/tmp/qaick-normal-runtime-build"
+  },
+  "include": [
+    "/home/logr/IdeaProjects/QAICK/QAICK_Runtime/src/runtime.ts",
+    "/home/logr/IdeaProjects/QAICK/QAICK_Runtime/src/index.ts"
+  ]
+}

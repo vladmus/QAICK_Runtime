@@ -12,10 +12,12 @@
     "skipLibCheck": true,
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
-    "paths": {
-      "@qaick/executor": ["../QAICK_Executor/dist/index.d.ts"]
-    }
+    "resolveJsonModule": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.test.ts"
+  ]
 }

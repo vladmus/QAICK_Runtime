@@ -23,7 +23,7 @@ describe('QAick Runtime Node HTTP composition', () => {
     };
     const runtime = createRuntime({ actionExecutors: [new HttpActionExecutor(transport)] });
     const executionPackage = {
-      schemaVersion: 6,
+      schemaVersion: 7 as const, ordering: 'routine' as const, executionContext: {scope:'flow' as const,mode:'standalone' as const},
       packageId: 'runtime-cookie-session',
       target: { kind: 'flow' as const, id: 'flow', name: 'Cookie Session' },
       definitions: [
@@ -31,8 +31,8 @@ describe('QAick Runtime Node HTTP composition', () => {
         { id: 'http.payment', kind: 'action' as const, name: 'Payment' },
       ],
       steps: [
-        { id: 'auth', name: 'Auth', action: 'http.auth', output: { cookies: null }, staticInputs: { url: 'https://example.test/auth', method: 'POST' } },
-        { id: 'payment', name: 'Payment', action: 'http.payment', output: {}, dependsOn: ['auth'], bindings: { cookies: '$steps.auth.cookies' }, staticInputs: { url: 'https://example.test/payment', method: 'POST', cookies: '{{inputs.cookies}}' } },
+        { structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'auth', name: 'Auth', action: 'http.auth', output: { cookies: null }, staticInputs: { url: 'https://example.test/auth', method: 'POST' } },
+        { structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:2}]}, id: 'payment', name: 'Payment', action: 'http.payment', output: {}, dependsOn: ['auth'], bindings: { cookies: {type:'hierarchy-output' as const,address:{scope:'flow' as const,segments:[{kind:'step' as const,position:1}]},iterations:[],outputName:'cookies'} }, staticInputs: { url: 'https://example.test/payment', method: 'POST', cookies: '{{inputs.cookies}}' } },
       ],
       requiredInputs: [],
     };
@@ -42,7 +42,7 @@ describe('QAick Runtime Node HTTP composition', () => {
 
     const { dependsOn: _dependsOn, ...paymentOnlyStep } = executionPackage.steps[1];
     const secondRun = await runtime.execute({
-      requestId: 'runtime-cookie-b', executionPackage: { ...executionPackage, steps: [paymentOnlyStep] }, inputs: {}, environment: 'test',
+      requestId: 'runtime-cookie-b', executionPackage: { ...executionPackage, steps: [paymentOnlyStep], omittedOccurrences:[{address:executionPackage.steps[0].structuralAddress,reason:'isolated diagnostic'}] }, inputs: {}, environment: 'test',
     });
     expect((await secondRun.result).state).toBe('failed');
     expect(observedCookies).toEqual([undefined, 'session=runtime-session']);
@@ -71,7 +71,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       actionExecutors: [new HttpActionExecutor(new NodeHttpTransport())],
     });
     const executionPackage = {
-      schemaVersion: 6,
+      schemaVersion: 7 as const, ordering: 'routine' as const, executionContext: {scope:'flow' as const,mode:'standalone' as const},
       packageId: 'runtime-http-composition',
       target: { kind: 'flow' as const, id: 'flow', name: 'Runtime HTTP Flow' },
       definitions: [
@@ -80,7 +80,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       ],
       requiredInputs: [],
       steps: [{
-        id: 'load-orders',
+        structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'load-orders',
         name: 'Load orders',
         action: 'http.request',
         staticInputs: { url: `http://127.0.0.1:${address.port}/orders`, method: 'GET' },
@@ -138,7 +138,7 @@ describe('QAick Runtime Node HTTP composition', () => {
     if (!address || typeof address === 'string') throw new Error('Test server did not expose a port.');
     const runtime = createRuntime({ actionExecutors: [new HttpActionExecutor(new NodeHttpTransport())] });
     const packageFor = (path: string, staticInputs: Record<string, unknown>, adapterConfig?: Record<string, unknown>) => ({
-      schemaVersion: 6,
+      schemaVersion: 7 as const, ordering: 'routine' as const, executionContext: {scope:'flow' as const,mode:'standalone' as const},
       packageId: `runtime-http-${path.slice(1)}`,
       target: { kind: 'flow' as const, id: 'flow', name: 'Runtime HTTP Flow' },
       definitions: [
@@ -146,7 +146,7 @@ describe('QAick Runtime Node HTTP composition', () => {
         { id: 'http.request', kind: 'action' as const, name: 'HTTP Request' },
       ],
       requiredInputs: [],
-      steps: [{ id: 'request', name: 'Request', action: 'http.request', staticInputs, adapterConfig, output: {} }],
+      steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'request', name: 'Request', action: 'http.request', staticInputs, ...(adapterConfig ? {adapterConfig}:{}), output: {} }],
     });
     const baseUrl = `http://127.0.0.1:${address.port}`;
 
@@ -157,7 +157,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       environment: 'node',
     });
     const postResult = await postRun.result;
-    expect(postResult.state).toBe('completed');
+    expect(postResult.state, JSON.stringify(postResult.error)).toBe('completed');
     expect(postResult.steps[0]?.outputs).toMatchObject({ body: { received: { name: 'QAick' } } });
 
     const errorRun = await runtime.execute({

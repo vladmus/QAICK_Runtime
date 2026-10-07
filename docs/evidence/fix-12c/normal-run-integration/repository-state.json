@@ -1,0 +1,12 @@
+{
+  "head": "13ecc2d847d9cba99ae03386ffa1aeb9013060d0",
+  "sourceFiles": [
+    "src/index.ts",
+    "src/runtime-headless.test.ts",
+    "src/runtime-http.test.ts",
+    "src/runtime.test.ts",
+    "src/runtime.ts"
+  ],
+  "manifestsOrLockfilesChanged": [],
+  "statusAtCapture": " M src/index.ts\n M src/runtime-headless.test.ts\n M src/runtime-http.test.ts\n M src/runtime.test.ts\n M src/runtime.ts\n?? docs/evidence/\n"
+}

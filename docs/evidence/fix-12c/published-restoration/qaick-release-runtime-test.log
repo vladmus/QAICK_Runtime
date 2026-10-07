@@ -1,0 +1,13 @@
+
+> @qaick/runtime@0.2.0 test
+> vitest run --maxWorkers=2
+
+
+ RUN  v5.0.2 /home/logr/IdeaProjects/QAICK/QAICK_Runtime
+
+
+ Test Files  3 passed (3)
+      Tests  12 passed (12)
+   Start at  23:29:12
+   Duration  298ms (import 34%, transform 33%, tests 29%, worker 5%)
+

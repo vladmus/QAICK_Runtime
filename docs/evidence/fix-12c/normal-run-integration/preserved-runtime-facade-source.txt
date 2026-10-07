@@ -1,5 +1,4 @@
-import { createExecutor } from '@qaick/executor';
-import packageJson from '../package.json' with { type: 'json' };
+import { createMigratedExecutor } from '@qaick/executor';
 import type {
   ActionExecutor,
   ControlCommand,
@@ -10,16 +9,13 @@ import type {
   ExecutorRequest,
   ExecutorResult,
   ExecutorRun,
-  ActReplayTarget,
-  ActReplayHandle,
-  OperationReplayHandle,
 } from '@qaick/executor';
 
 export interface RuntimeConfiguration extends ExecutorConfiguration {
   executor?: Executor;
 }
 
-export const RUNTIME_VERSION = packageJson.version;
+export const RUNTIME_VERSION = '0.1.0-alpha.7' as const;
 
 export type RuntimeCapability =
   | 'execution'
@@ -45,14 +41,14 @@ export interface QaickRuntime {
   controlState(requestId: string): ExecutionControlState | undefined;
   events(requestId: string): AsyncIterable<ExecutorEvent>;
   result(requestId: string): Promise<ExecutorResult>;
-  retryAction(requestId: string, target: ActReplayTarget): Promise<ActReplayHandle>;
-  retryOperation(requestId: string, target: ActReplayTarget): Promise<OperationReplayHandle>;
-  runFromHere(requestId: string, target: ActReplayTarget): Promise<ExecutorRun>;
+  retryAction(requestId: string, stepId: string, invocationPath?: string[]): Promise<void>;
+  retryOperation(requestId: string, stepId: string, invocationPath?: string[]): Promise<void>;
+  runFromHere(requestId: string, stepId: string, invocationPath?: string[]): Promise<ExecutorRun | undefined>;
   registerActionExecutor(executor: ActionExecutor): void;
 }
 
 export function createRuntime(configuration: RuntimeConfiguration = {}): QaickRuntime {
-  return new ComposedQaickRuntime(configuration.executor ?? createExecutor(configuration));
+  return new ComposedQaickRuntime(configuration.executor ?? createMigratedExecutor(configuration));
 }
 
 class ComposedQaickRuntime implements QaickRuntime {
@@ -74,8 +70,8 @@ class ComposedQaickRuntime implements QaickRuntime {
   controlState(requestId: string): ExecutionControlState | undefined { return this.executor.controlState(requestId); }
   events(requestId: string): AsyncIterable<ExecutorEvent> { return this.executor.events(requestId); }
   result(requestId: string): Promise<ExecutorResult> { return this.executor.result(requestId); }
-  retryAction(requestId: string, target: ActReplayTarget): Promise<ActReplayHandle> { return this.executor.retryAction(requestId, target); }
-  retryOperation(requestId: string, target: ActReplayTarget): Promise<OperationReplayHandle> { return this.executor.retryOperation(requestId, target); }
-  runFromHere(requestId: string, target: ActReplayTarget): Promise<ExecutorRun> { return this.executor.runFromHere(requestId, target); }
+  retryAction(requestId: string, stepId: string, invocationPath?: string[]): Promise<void> { return this.executor.retryAction(requestId, stepId, invocationPath); }
+  retryOperation(requestId: string, stepId: string, invocationPath?: string[]): Promise<void> { return this.executor.retryOperation(requestId, stepId, invocationPath); }
+  runFromHere(requestId: string, stepId: string, invocationPath?: string[]): Promise<ExecutorRun | undefined> { return this.executor.runFromHere(requestId, stepId, invocationPath); }
   registerActionExecutor(executor: ActionExecutor): void { this.executor.registerActionExecutor(executor); }
 }
