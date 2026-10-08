@@ -1,4 +1,5 @@
 import { createExecutor } from '@qaick/executor';
+import { ScriptActionExecutor, type ScriptBackend } from './script.js';
 import packageJson from '../package.json' with { type: 'json' };
 import type {
   ActionExecutor,
@@ -17,6 +18,7 @@ import type {
 
 export interface RuntimeConfiguration extends ExecutorConfiguration {
   executor?: Executor;
+  scriptBackend?: ScriptBackend;
 }
 
 export const RUNTIME_VERSION = packageJson.version;
@@ -52,7 +54,9 @@ export interface QaickRuntime {
 }
 
 export function createRuntime(configuration: RuntimeConfiguration = {}): QaickRuntime {
-  return new ComposedQaickRuntime(configuration.executor ?? createExecutor(configuration));
+  const executor = configuration.executor ?? createExecutor(configuration);
+  executor.registerActionExecutor(new ScriptActionExecutor(configuration.scriptBackend));
+  return new ComposedQaickRuntime(executor);
 }
 
 class ComposedQaickRuntime implements QaickRuntime {

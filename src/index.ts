@@ -17,3 +17,5 @@ export type {
 } from '@qaick/executor';
 
 export { resolveDeclaredInputs } from '@qaick/executor';
+
+export * from './script.js';
