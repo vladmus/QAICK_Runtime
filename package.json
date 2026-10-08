@@ -1,6 +1,6 @@
 {
   "name": "@qaick/runtime",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Host-neutral composition layer for QAick execution.",
   "type": "module",
   "files": [
