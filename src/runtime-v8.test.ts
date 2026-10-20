@@ -7,12 +7,12 @@ import {NodeHttpTransport} from '@qaick/http-executor/node';
 import {createRuntime} from './runtime.js';
 import type {ExecutorRequestV8} from './index.js';
 const fixture=()=>JSON.parse(readFileSync(new URL('./fixtures/v8-standalone-operation.json',import.meta.url),'utf8')) as ExecutorRequestV8['executionPackage'];
-const request=(executionPackage:ExecutorRequestV8['executionPackage'],extra:Partial<ExecutorRequestV8>={}):ExecutorRequestV8=>({requestId:crypto.randomUUID(),executionPackage,inputs:{},environment:'test',...extra});
+const request=(executionPackage:ExecutorRequestV8['executionPackage'],extra:Partial<ExecutorRequestV8>={}):ExecutorRequestV8=>({requestId:crypto.randomUUID(),executionPackage,inputs:{},...extra});
 
 it('forwards v8 through the injected published Executor, retaining occurrence/hash/scope and event/result APIs',async()=>{
  const doc=fixture(),dispatch=vi.fn(async()=>({outputs:{value:17}}));doc.nodes[1].output={value:null};
  const executor=createExecutor({actionExecutors:[{supports:()=>true,execute:dispatch}]}),runtime=createRuntime({executor}),r=request(doc),h=await runtime.execute(r),result=await h.result;
- expect(result.resultVersion).toBe(2);expect(result.scope).toEqual(doc.selection.root);expect(result.source).toEqual(doc.source);expect(result.steps[0].occurrence).toBe(doc.context.root);expect(result.steps[0].children?.[0].outputs.value).toBe(17);expect(dispatch).toHaveBeenCalledTimes(1);expect(await runtime.result(r.requestId)).toEqual(result);expect(runtime.controlState(r.requestId)).toBe('completed');
+ expect(Object.hasOwn(result,'environment')).toBe(false);expect(Object.hasOwn(r,'environment')).toBe(false);expect(Object.hasOwn(dispatch.mock.calls[0][0],'environment')).toBe(false);expect(result.resultVersion).toBe(2);expect(result.scope).toEqual(doc.selection.root);expect(result.source).toEqual(doc.source);expect(result.steps[0].occurrence).toBe(doc.context.root);expect(result.steps[0].children?.[0].outputs.value).toBe(17);expect(dispatch).toHaveBeenCalledTimes(1);expect(await runtime.result(r.requestId)).toEqual(result);expect(runtime.controlState(r.requestId)).toBe('completed');
  const events=[];for await(const event of runtime.events(r.requestId))events.push(event);expect(events.every(e=>'eventVersion'in e&&e.eventVersion===2)).toBe(true);expect(events.at(-1)?.type).toBe('run_finished');
 });
 it('preserves v8 admission rejection and preflight failed evidence as distinct zero-dispatch boundaries',async()=>{

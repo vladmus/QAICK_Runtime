@@ -20,7 +20,7 @@ const rootAddress={scope:'flow' as const,segments:[{kind:'step' as const,positio
 
 it.each([['absent',{},'default'],['replacement',{s:'replacement'},'replacement'],['string-null',{s:'null'},'null'],['whitespace',{s:'  '},'  ']] as const)('actual HTTP preserves %s selection',async(name,inputs,expected)=>{
  const pkg={...flowPackage([http(rootAddress,true)]),inputDeclarations:[declare('s')]};
- const result=await(await runtime().execute({requestId:name,executionPackage:pkg,inputs:{...inputs},environment:'test'})).result;
+ const result=await(await runtime().execute({requestId:name,executionPackage:pkg,inputs:{...inputs}})).result;
  expect(result.state).toBe('completed');expect(result.steps[0].inputs.value).toBe(expected);
  expect(fixture.receipts).toHaveLength(1);expect(fixture.receipts[0].query.value).toBe(expected);
  expect(fixture.receipts[0].parsedBody).toEqual({literal:null,items:[null,false,0]});
@@ -28,7 +28,7 @@ it.each([['absent',{},'default'],['replacement',{s:'replacement'},'replacement']
 
 it.each([['number',0],['boolean',false]] as const)('actual HTTP preserves %s falsey values',async(type,value)=>{
  const pkg={...flowPackage([http(rootAddress,true)]),inputDeclarations:[{name:'s',type,required:true}]};
- const result=await(await runtime().execute({requestId:type,executionPackage:pkg,inputs:{s:value},environment:'test'})).result;
+ const result=await(await runtime().execute({requestId:type,executionPackage:pkg,inputs:{s:value}})).result;
  expect(result.state).toBe('completed');expect(result.steps[0].inputs.value).toBe(value);
  expect(fixture.receipts).toHaveLength(1);expect(fixture.receipts[0].query.value).toBe(String(value));
 });
@@ -36,7 +36,7 @@ it.each([['number',0],['boolean',false]] as const)('actual HTTP preserves %s fal
 it.each([null,'',undefined])('required explicit clear %s suppresses a meaningful default with zero HTTP',async s=>{
  const pkg={...flowPackage([http(rootAddress,true)]),inputDeclarations:[declare('s',true)]};
  const before=JSON.stringify(fixture.receipts);
- const result=await(await runtime().execute({requestId:'required',executionPackage:pkg,inputs:{s},environment:'test'})).result;
+ const result=await(await runtime().execute({requestId:'required',executionPackage:pkg,inputs:{s}})).result;
  expect(result.state).toBe('failed');expect(result.issues?.some(issue=>issue.code==='MISSING_INPUT')).toBe(true);
  expect(JSON.stringify(fixture.receipts)).toBe(before);
 });
@@ -44,7 +44,7 @@ it.each([null,'',undefined])('required explicit clear %s suppresses a meaningful
 it.each([null,''])('optional consumed clear %s fails binding without HTTP or default resurrection',async s=>{
  const pkg={...flowPackage([http(rootAddress,true)]),inputDeclarations:[declare('s')]};
  const before=JSON.stringify(fixture.receipts);
- const result=await(await runtime().execute({requestId:'bound-clear',executionPackage:pkg,inputs:{s},environment:'test'})).result;
+ const result=await(await runtime().execute({requestId:'bound-clear',executionPackage:pkg,inputs:{s}})).result;
  expect(result.state).toBe('failed');expect(result.steps[0].error?.code).toBe('BINDING_RESOLUTION_ERROR');
  expect(JSON.stringify(fixture.receipts)).toBe(before);
 });
@@ -58,7 +58,7 @@ it('root/Flow omission and Operation clearing coexist with independent defaults 
   (child.staticInputs!.query as Record<string,string>).value='{{inputs.value}}';
   return {id:`f${position}`,name:`F${position}`,structuralPosition:position,inputDeclarations:[declare('s',false,`flow${position}`),declare('other',true,`other${position}`)],steps:[{id:'op',name:'Operation',kind:'operation' as const,action:'operation',output:{},structuralAddress:at,inputDeclarations:[declare('mode',false,'operation-default')],staticInputs:{mode:null},children:[child]}]};
  })};
- const result=await(await rt.execute({requestId:'boundaries',executionPackage:pkg,inputs:{s:null},environment:'test'})).result;
+ const result=await(await rt.execute({requestId:'boundaries',executionPackage:pkg,inputs:{s:null}})).result;
  expect(result.state).toBe('completed');expect(fixture.receipts.map(r=>r.query.value)).toEqual(['other1','other2']);
  // Original execution must also expose missing Flow lexical s, not just replay snapshots.
  for(const position of [1,2]) {
@@ -71,7 +71,7 @@ it('root/Flow omission and Operation clearing coexist with independent defaults 
    }
   }
   const before=JSON.stringify(fixture.receipts);
-  const original=await(await rt.execute({requestId:`original-scope-${position}`,executionPackage:probe,inputs:{s:null},environment:'test'})).result;
+  const original=await(await rt.execute({requestId:`original-scope-${position}`,executionPackage:probe,inputs:{s:null}})).result;
   expect(original.state).toBe('failed');
   expect(original.children![position-1].steps[0].children![0].error?.code).toBe('BINDING_RESOLUTION_ERROR');
   expect(JSON.stringify(fixture.receipts)).toBe(before);

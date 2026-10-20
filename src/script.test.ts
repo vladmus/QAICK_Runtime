@@ -1,7 +1,7 @@
 import {describe,expect,it,vi} from 'vitest';
 import {ScriptActionExecutor,scriptJsonIssue,scriptResultIssue,SCRIPT_WORKER_SOURCE} from './script.js';
 import {createRuntime} from './runtime.js';
-const context=(source='function run(args) { return {value:42}; }')=>({action:'script.compute',inputs:{amount:7},environment:'test',runtimeValues:{},step:{id:'same',name:'Compute',action:'script.compute',output:{value:null},adapterConfig:{source,outputNames:['value']}},signal:new AbortController().signal});
+const context=(source='function run(args) { return {value:42}; }')=>({action:'script.compute',inputs:{amount:7},runtimeValues:{},step:{id:'same',name:'Compute',action:'script.compute',output:{value:null},adapterConfig:{source,outputNames:['value']}},signal:new AbortController().signal});
 describe('shared script adapter',()=>{
  it('headless scripts explicitly require a backend',async()=>{await expect(new ScriptActionExecutor().execute(context())).rejects.toMatchObject({code:'UNSUPPORTED_SCRIPT_EXECUTION'});});
  it('clones arguments and publishes named outputs independently for repeated calls',async()=>{
@@ -36,7 +36,7 @@ describe('shared script adapter',()=>{
  });
  it('registers unsupported script dispatch in default Runtime, distinct from static execution',async()=>{
   const address={scope:'flow' as const,segments:[{kind:'step' as const,position:1}]};
-  const run=await createRuntime().execute({requestId:'headless-script',inputs:{},environment:'headless',executionPackage:{schemaVersion:7,ordering:'routine',packageId:'script',executionContext:{scope:'flow',mode:'standalone'},target:{kind:'flow',id:'f',name:'f'},definitions:[{kind:'action',id:'script.compute',name:'Compute'}],requiredInputs:[],steps:[{...context().step,structuralAddress:address}]}});
+  const run=await createRuntime().execute({requestId:'headless-script',inputs:{},executionPackage:{schemaVersion:7,ordering:'routine',packageId:'script',executionContext:{scope:'flow',mode:'standalone'},target:{kind:'flow',id:'f',name:'f'},definitions:[{kind:'action',id:'script.compute',name:'Compute'}],requiredInputs:[],steps:[{...context().step,structuralAddress:address}]}});
   const result=await run.result;expect(result.state).toBe('failed');expect(result.steps[0].error?.code).toBe('UNSUPPORTED_SCRIPT_EXECUTION');
  });
  it('Worker program validates before posting results and defines only run(args)',()=>{expect(SCRIPT_WORKER_SOURCE).toContain('scriptResultIssue(result, outputNames)');expect(SCRIPT_WORKER_SOURCE).toContain('new Function');});

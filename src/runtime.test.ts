@@ -32,7 +32,7 @@ describe('QAick Runtime composition', () => {
       steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'echo', name: 'Echo', action: 'runtime.echo', staticInputs: { value: 'hello' }, output: { echoed: 'value' } }],
     };
 
-    const run = await runtime.execute({ requestId: 'runtime-composition', executionPackage, inputs: {}, environment: 'test' });
+    const run = await runtime.execute({ requestId: 'runtime-composition', executionPackage, inputs: {} });
     const result = await run.result;
 
     expect(result.state).toBe('completed');
@@ -43,7 +43,7 @@ describe('QAick Runtime composition', () => {
     let runtimeValues: Record<string, unknown> | undefined;
     const runtime = createRuntime({ actionExecutors: [{
       supports: name => name === 'runtime.execution-key',
-      execute: context => { runtimeValues = context.runtimeValues; return { outputs: { ok: true } }; },
+      execute: context => { expect(Object.hasOwn(context, 'environment')).toBe(false); runtimeValues = context.runtimeValues; return { outputs: { ok: true } }; },
     }] });
     const run = await runtime.execute({
       requestId: 'runtime-execution-key',
@@ -52,9 +52,10 @@ describe('QAick Runtime composition', () => {
         definitions: [{ id: 'runtime.execution-key', kind: 'action', name: 'Execution Key' }],
         steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'key', name: 'Execution Key', action: 'runtime.execution-key', output: {} }], requiredInputs: [],
       },
-      inputs: {}, environment: 'test', runtimeValues: { environment: 'test' },
+      inputs: {}, runtimeValues: { environment: 'test' },
     });
-    await run.result;
+    const result = await run.result;
+    expect(Object.hasOwn(result, 'environment')).toBe(false);
     expect(runtimeValues).toEqual({ environment: 'test' });
   });
 
@@ -75,7 +76,7 @@ describe('QAick Runtime composition', () => {
       requiredInputs: [],
       steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'controlled', name: 'Controlled', action: 'runtime.controlled', output: { ok: true } }],
     };
-    const run = await runtime.execute({ requestId: 'runtime-controls', executionPackage, inputs: {}, environment: 'test' });
+    const run = await runtime.execute({ requestId: 'runtime-controls', executionPackage, inputs: {} });
     const events = [];
     for await (const event of runtime.events('runtime-controls')) events.push(event);
     await run.result;
@@ -98,7 +99,7 @@ describe('QAick Runtime composition', () => {
       steps: [{ structuralAddress: {scope:'flow' as const,segments:[{kind:'step' as const,position:1}]}, id: 'missing', name: 'Missing', action: 'missing.action', output: {} }],
     };
 
-    const run = await runtime.execute({ requestId: 'runtime-unsupported-action', executionPackage, inputs: {}, environment: 'test' });
+    const run = await runtime.execute({ requestId: 'runtime-unsupported-action', executionPackage, inputs: {} });
     const first = await run.result;
     const second = await runtime.result('runtime-unsupported-action');
 

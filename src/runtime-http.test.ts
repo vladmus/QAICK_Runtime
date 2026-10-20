@@ -37,13 +37,12 @@ describe('QAick Runtime Node HTTP composition', () => {
       requiredInputs: [],
     };
 
-    const firstRun = await runtime.execute({ requestId: 'runtime-cookie-a', executionPackage, inputs: {}, environment: 'test' });
+    const firstRun = await runtime.execute({ requestId: 'runtime-cookie-a', executionPackage, inputs: {} });
     expect((await firstRun.result).state).toBe('completed');
 
     const { dependsOn: _dependsOn, ...paymentOnlyStep } = executionPackage.steps[1];
     const secondRun = await runtime.execute({
-      requestId: 'runtime-cookie-b', executionPackage: { ...executionPackage, steps: [paymentOnlyStep], omittedOccurrences:[{address:executionPackage.steps[0].structuralAddress,reason:'isolated diagnostic'}] }, inputs: {}, environment: 'test',
-    });
+      requestId: 'runtime-cookie-b', executionPackage: { ...executionPackage, steps: [paymentOnlyStep], omittedOccurrences:[{address:executionPackage.steps[0].structuralAddress,reason:'isolated diagnostic'}] }, inputs: {}, });
     expect((await secondRun.result).state).toBe('failed');
     expect(observedCookies).toEqual([undefined, 'session=runtime-session']);
   });
@@ -93,8 +92,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       requestId: 'runtime-http-composition',
       executionPackage,
       inputs: {},
-      environment: 'node',
-    });
+      });
     const result = await run.result;
 
     expect(result.state).toBe('completed');
@@ -154,8 +152,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       requestId: 'runtime-http-post',
       executionPackage: packageFor('/echo', { url: `${baseUrl}/echo`, method: 'POST', body: { name: 'QAick' } }),
       inputs: {},
-      environment: 'node',
-    });
+      });
     const postResult = await postRun.result;
     expect(postResult.state, JSON.stringify(postResult.error)).toBe('completed');
     expect(postResult.steps[0]?.outputs).toMatchObject({ body: { received: { name: 'QAick' } } });
@@ -164,8 +161,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       requestId: 'runtime-http-error',
       executionPackage: packageFor('/error', { url: `${baseUrl}/error` }),
       inputs: {},
-      environment: 'node',
-    });
+      });
     const errorResult = await errorRun.result;
     expect(errorResult.state).toBe('failed');
     expect(errorResult.error?.code).toBe('HTTP_STATUS_ERROR');
@@ -174,8 +170,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       requestId: 'runtime-http-timeout',
       executionPackage: packageFor('/slow', { url: `${baseUrl}/slow` }, { timeoutMs: 10 }),
       inputs: {},
-      environment: 'node',
-    });
+      });
     const timeoutResult = await timeoutRun.result;
     expect(timeoutResult.state).toBe('failed');
     expect(timeoutResult.error?.code).toBe('HTTP_TIMEOUT');
@@ -184,8 +179,7 @@ describe('QAick Runtime Node HTTP composition', () => {
       requestId: 'runtime-http-network',
       executionPackage: packageFor('/closed', { url: 'http://127.0.0.1:1/closed' }),
       inputs: {},
-      environment: 'node',
-    });
+      });
     const networkResult = await networkRun.result;
     expect(networkResult.state).toBe('failed');
     expect(networkResult.error?.code).toBe('HTTP_NETWORK_ERROR');

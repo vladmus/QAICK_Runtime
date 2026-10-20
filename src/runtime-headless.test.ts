@@ -28,7 +28,7 @@ describe('QAick Runtime headless acceptance', () => {
     };
     const runtime = createRuntime({ actionExecutors: [action] });
 
-    const run = await runtime.execute({ requestId: 'runtime-bindings', executionPackage: flow, inputs: { customerId: 'C-1' }, environment: 'node' });
+    const run = await runtime.execute({ requestId: 'runtime-bindings', executionPackage: flow, inputs: { customerId: 'C-1' } });
     const result = await run.result;
     const events = [];
     for await (const event of runtime.events('runtime-bindings')) events.push(event);
@@ -61,7 +61,7 @@ describe('QAick Runtime headless acceptance', () => {
       }],
     };
 
-    const run = await runtime.execute({ requestId: 'runtime-nested-operation', executionPackage, inputs: { customerId: 'C-1' }, environment: 'node' });
+    const run = await runtime.execute({ requestId: 'runtime-nested-operation', executionPackage, inputs: { customerId: 'C-1' } });
     const result = await run.result;
 
     expect(result.state).toBe('completed');
@@ -90,7 +90,7 @@ describe('QAick Runtime headless acceptance', () => {
       steps: [{ ...flow.steps[0], action: 'headless.retry', bindings: {} }],
     };
 
-    const run = await runtime.execute({ requestId: 'runtime-retry', executionPackage, inputs: {}, environment: 'node' });
+    const run = await runtime.execute({ requestId: 'runtime-retry', executionPackage, inputs: {} });
     expect((await run.result).state).toBe('failed');
     const target = {structuralAddress:executionPackage.steps[0].structuralAddress,iterations:[]};
     const replay = await runtime.retryAction('runtime-retry', target);
@@ -119,7 +119,7 @@ describe('QAick Runtime headless acceptance', () => {
       steps: [{ ...flow.steps[0], action: 'headless.wait', bindings: {} }],
     };
 
-    const run = await runtime.execute({ requestId: 'runtime-cancel', executionPackage, inputs: {}, environment: 'node' });
+    const run = await runtime.execute({ requestId: 'runtime-cancel', executionPackage, inputs: {} });
     await runtime.cancel('runtime-cancel');
 
     expect((await run.result).state).toBe('cancelled');
