@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- Forward Execution Document v8 requests and versioned evidence through published Executor 0.3.0; preserve the existing Runtime composition, script adapter, controls and v7 behavior.
+- Verify HTTP composition against published HTTP Executor 0.2.7 without changing Environment handling or Runner/Desktop integration.
+
 ## 0.2.5
 
 - Align the exact production Executor dependency and development HTTP Executor dependency to published `0.2.4`, resolving Contract `0.4.0`.

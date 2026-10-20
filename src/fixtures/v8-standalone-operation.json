@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 8,
+  "packageId": "standalone-op",
+  "target": {
+    "kind": "flow",
+    "id": "op",
+    "name": "Standalone Operation"
+  },
+  "source": {
+    "kind": "authoring",
+    "id": "op",
+    "schemaVersion": 12,
+    "contentHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "context": {
+    "coverage": "loaded-root",
+    "root": "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[]}",
+    "nodes": [
+      {
+        "key": "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[]}",
+        "locator": {
+          "kind": "source",
+          "root": {
+            "kind": "operation",
+            "id": "op"
+          },
+          "path": []
+        },
+        "kind": "operation",
+        "name": "Standalone Operation",
+        "parent": null,
+        "children": [
+          "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"}]}"
+        ],
+        "sequence": [
+          "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"}]}"
+        ],
+        "orderState": "ordered",
+        "issues": []
+      },
+      {
+        "key": "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"}]}",
+        "locator": {
+          "kind": "source",
+          "root": {
+            "kind": "operation",
+            "id": "op"
+          },
+          "path": [
+            {
+              "kind": "body"
+            }
+          ]
+        },
+        "kind": "body",
+        "name": "Body",
+        "parent": "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[]}",
+        "children": [
+          "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"},{\"kind\":\"node\",\"id\":\"a\"}]}"
+        ],
+        "sequence": [
+          "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"},{\"kind\":\"node\",\"id\":\"a\"}]}"
+        ],
+        "orderState": "ordered",
+        "issues": []
+      },
+      {
+        "key": "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"},{\"kind\":\"node\",\"id\":\"a\"}]}",
+        "locator": {
+          "kind": "source",
+          "root": {
+            "kind": "operation",
+            "id": "op"
+          },
+          "path": [
+            {
+              "kind": "body"
+            },
+            {
+              "kind": "node",
+              "id": "a"
+            }
+          ]
+        },
+        "kind": "action",
+        "name": "Action",
+        "parent": "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"}]}",
+        "children": [],
+        "sequence": null,
+        "orderState": "not-applicable",
+        "issues": []
+      }
+    ],
+    "edges": []
+  },
+  "selection": {
+    "root": {
+      "kind": "document"
+    },
+    "executable": true,
+    "issues": []
+  },
+  "nodes": [
+    {
+      "occurrence": "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[]}",
+      "id": "op",
+      "name": "Standalone Operation",
+      "kind": "operation",
+      "action": "operation",
+      "output": {},
+      "children": [
+        "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"},{\"kind\":\"node\",\"id\":\"a\"}]}"
+      ]
+    },
+    {
+      "occurrence": "{\"kind\":\"source\",\"root\":{\"kind\":\"operation\",\"id\":\"op\"},\"path\":[{\"kind\":\"body\"},{\"kind\":\"node\",\"id\":\"a\"}]}",
+      "id": "a",
+      "name": "Action",
+      "kind": "action",
+      "action": "test",
+      "output": {}
+    }
+  ],
+  "flows": []
+}
