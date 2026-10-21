@@ -1,0 +1,10 @@
+import {expect,it,vi} from 'vitest';
+import {createRuntime} from './runtime.js';
+import type {ExecutionPackageV7} from '@qaick/contract';
+const address=(...p:number[])=>({scope:'flow' as const,segments:p.flatMap((position,i)=>i?[{kind:'body' as const},{kind:'step' as const,position}]:[{kind:'step' as const,position}])});
+for(const missing of [false,true])it(`Runtime preserves declared Operation output resolution; missing=${missing}`,async()=>{
+ const dispatch=vi.fn(async(c:{inputs:Record<string,unknown>;step:{id:string}})=>({outputs:{value:c.step.id==='consumer'?c.inputs.paymentId:c.step.id}}));
+ const pack:ExecutionPackageV7={schemaVersion:7,ordering:'routine',packageId:'operation-compatibility',definitions:[],target:{kind:'flow',id:'flow',name:'Flow'},executionContext:{scope:'flow',mode:'standalone'},steps:[{id:'operation',name:'Create Payment Context',action:'operation',kind:'operation',output:{paymentId:null},structuralAddress:address(1),children:[{id:'first',name:'First',action:'test',kind:'action',output:{value:null},structuralAddress:address(1,1)},{id:'last',name:'Last',action:'test',kind:'action',output:{value:null},structuralAddress:address(1,2)}],outputBindings:missing?{}:{paymentId:{type:'hierarchy-output',address:address(1,1),iterations:[],outputName:'value'}}},{id:'consumer',name:'Consumer',action:'test',kind:'action',output:{value:null},structuralAddress:address(2),bindings:{paymentId:{type:'hierarchy-output',address:address(1),iterations:[],outputName:'paymentId'}}}]};
+ const result=await(await createRuntime({actionExecutors:[{supports:()=>true,execute:dispatch}]}).execute({requestId:'operation-output-'+missing,executionPackage:pack,inputs:{}})).result;
+ expect(result.state).toBe(missing?'failed':'completed');if(missing){expect(result.steps[1].error?.code).toBe('output-evidence-unavailable');expect(dispatch).toHaveBeenCalledTimes(2);}else{expect(result.steps[1].inputs.paymentId).toBe('first');expect(result.steps[0].outputs.paymentId).toBe('first');expect(dispatch).toHaveBeenCalledTimes(3);}
+});
