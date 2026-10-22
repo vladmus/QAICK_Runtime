@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3
+
+- Use Executor 0.4.3 and verify with HTTP Executor 0.2.12 so native execution preserves supported error details across cloning and IPC.
+- Preserve existing Runtime composition, controls, Script execution and result semantics; no production source changes.
+
 ## 0.3.0
 
 - Forward Execution Document v8 requests and versioned evidence through published Executor 0.3.0; preserve the existing Runtime composition, script adapter, controls and v7 behavior.
