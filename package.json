@@ -36,7 +36,7 @@
     "@qaick/executor": "0.4.4"
   },
   "devDependencies": {
-    "@qaick/http-executor": "0.2.12",
+    "@qaick/http-executor": "0.2.13",
     "typescript": "~6.0.2",
     "vitest": "^5.0.0"
   }
