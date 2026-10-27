@@ -1,6 +1,6 @@
 {
   "name": "@qaick/runtime",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Host-neutral composition layer for QAick execution.",
   "type": "module",
   "files": [
@@ -33,7 +33,7 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
-    "@qaick/executor": "0.4.3"
+    "@qaick/executor": "0.4.4"
   },
   "devDependencies": {
     "@qaick/http-executor": "0.2.12",
