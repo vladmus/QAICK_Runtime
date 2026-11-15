@@ -2,7 +2,7 @@
 
 `@qaick/runtime` is the host-neutral composition layer for QAick execution. It configures `@qaick/executor`, registers host-provided Action Executors, and routes execution handles, controls, events, results, retries, and Run From Here operations.
 
-Host transports and framework APIs remain outside this package. The current local development dependency points to the sibling `QAICK_Executor` repository.
+Host transports and framework APIs remain outside this package. The current package manifest depends on the published `@qaick/executor` version **0.4.13**; do not assume a sibling repository link or substitute local source when verifying an installed release.
 
 ```ts
 import { createRuntime } from '@qaick/runtime';
