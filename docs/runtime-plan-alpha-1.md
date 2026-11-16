@@ -1,5 +1,7 @@
 # QAick Runtime — Alpha 1 Development Plan
 
+**HISTORICAL ALPHA 1 PLAN — not current Runtime milestone or integration status (reclassified 2026-11-16).** The `ACTIVE — RT9 next` label below is a past checkpoint. See [Runtime README](../README.md) and [readiness register](https://github.com/vladmus/QAICK_Design/blob/main/docs/readiness-register.md).
+
 **HISTORICAL ALPHA 1 PLAN — not the current Runtime milestone or integration status (reclassified 2026-11-16).** The `ACTIVE — RT9 next` statement below is a past checkpoint. Consult [Runtime README](../README.md) and the [cross-product readiness register](https://github.com/vladmus/QAICK_Design/blob/main/docs/readiness-register.md) for current status.
 
 Status: **ACTIVE — RT9 Runner dual-composition integration next**
