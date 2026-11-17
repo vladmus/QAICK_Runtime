@@ -33,7 +33,7 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
-    "@qaick/executor": "0.4.14"
+    "@qaick/executor": "file:../QAICK_Executor"
   },
   "devDependencies": {
     "@qaick/http-executor": "0.2.29",
